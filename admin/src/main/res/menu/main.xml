@@ -2,8 +2,17 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/action_settings"
-        android:orderInCategory="100"
-        android:title="@string/action_settings"
+        android:id="@+id/rename_navigation_item"
+        android:icon="@android:drawable/ic_menu_edit"
+        android:title="@string/rename_setting"
+         />
+    <!--android:orderInCategory="100"
+    app:showAsAction="never"-->
+    <item
+        android:id="@+id/delete_navigation_item"
+        android:icon="@android:drawable/ic_menu_delete"
+        android:title="@string/delete_setting"
         app:showAsAction="never" />
+    <!--icon may not show by default
+    https://stackoverflow.com/questions/19750635/icon-in-menu-not-showing-in-android-->
 </menu>

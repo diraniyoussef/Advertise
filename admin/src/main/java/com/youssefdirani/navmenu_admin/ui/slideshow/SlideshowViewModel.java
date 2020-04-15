@@ -1,3 +1,4 @@
+/*
 package com.youssefdirani.navmenu_admin.ui.slideshow;
 
 import androidx.lifecycle.LiveData;
@@ -17,3 +18,4 @@ public class SlideshowViewModel extends ViewModel {
         return mText;
     }
 }
+ */

@@ -5,9 +5,11 @@
     <string name="nav_header_title">Android Studio</string>
     <string name="nav_header_subtitle">android.studio@android.com</string>
     <string name="nav_header_desc">Navigation header</string>
-    <string name="action_settings">Rename</string>
+    <string name="rename_setting">Rename</string>
+    <string name="delete_setting">Delete</string>
 
     <string name="menu_home">Home</string>
+    <string name="menu_newitem">Add New Item</string>
     <string name="menu_gallery">Gallery</string>
     <string name="menu_slideshow">Slideshow</string>
 
