@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/nav_home"> <!--startDestination is really the first appearing fragment when the app starts-->
+    app:startDestination="@id/nav_home"> <!--startDestination is really the first appearing fragment when the app starts-->
 
     <fragment
         android:id="@+id/nav_home"
@@ -40,4 +40,11 @@
         android:name="com.youssefdirani.navmenu_admin.ui.slideshow.SlideshowFragment"
         android:label="@string/menu_slideshow"
         tools:layout="@layout/fragment_slideshow" />
+
+    <fragment
+        android:id="@+id/nav_active"
+        android:name="com.youssefdirani.navmenu_admin.ui.ActiveFragment"
+        android:label="@string/menu_active"
+        tools:layout="@layout/fragment_active" />
+
 </navigation>

@@ -2,32 +2,30 @@ package com.youssefdirani.navmenu_admin;
 
 import android.app.AlertDialog;
 import android.content.ComponentCallbacks2;
-import android.content.ContentValues;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.provider.MediaStore;
 import android.text.InputType;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.Menu;
-import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
+import com.youssefdirani.navmenu_admin.ui.ActiveFragment;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -37,6 +35,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import androidx.annotation.NonNull;
+import androidx.core.view.GravityCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -100,7 +101,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private DrawerLayout drawer; //This is the "super large" layout element.
+    private Menu menu;
     private Toolbar toolbar;
+    private NavController navController; //a real (host) fragment
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -116,38 +121,210 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
-        DrawerLayout drawer = findViewById(R.id.drawer_layout); //This is the "super large" layout element.
-
+        drawer = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
-        mAppBarConfiguration = new AppBarConfiguration.Builder(
+        /* //that was the original, but I used the navController.getGraph() which may be better for dynamic changes
+        mAppBarConfiguration = new AppBarConfiguration.Builder( //(navController.getGraph()) has a slightly different behavior
                 R.id.nav_home, R.id.nav_gallery, R.id.nav_slideshow) //these are real fragments, not the fragment layout
                 //It's really interesting that these ids are to both the fragments and to the navigation items. They are and have to be the same !
                 .setDrawerLayout(drawer) //the 3 stacked layers (navigation) button needs to set a drawerlayout in order to appear.
                 .build();
-        //mAppBarConfiguration.getDrawerLayout().getChildAt(0).get;
+         */
 
         //to add a menu programmatically https://stackoverflow.com/questions/36333641/add-items-to-menu-group-programatically-in-navigation-view
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment); //a real (host) fragment
-        NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
-        NavigationUI.setupWithNavController(navigationView, navController);
-        client_app_data = getApplicationContext().getSharedPreferences("client_app_data", MODE_PRIVATE);
-        /*
-        //this is a listener for the case when the user chooses a navigation item, BUT IT DIDN'T WORK CORRECTLY. //https://developer.android.com/reference/android/support/design/widget/NavigationView.OnNavigationItemSelectedListener
-        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() { //must be after setupWithNavController
+        navController = Navigation.findNavController(this, R.id.nav_host_fragment);
+
+        //getting Items Ids to feed it as an argument to AppBarConfiguration.Builder
+        menu = navigationView.getMenu();
+
+        final MenuItem menuItem_addNewItem = menu.findItem(R.id.nav_addnewitem);
+
+        menuItem_addNewItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-                Log.i("Youssef", "order of chosen item is " + menuItem.getOrder() );
+            public boolean onMenuItemClick( MenuItem item ) {
+                Log.i("Youssef", "add New Menu Item is clicked.");
+                createMenuItem_AlertDialog();
+                drawer.closeDrawer(GravityCompat.START); //after this, onResume in the fragment is called. Tested. Still, it's better to make sure using a timer or something.
                 return false;
             }
         });
-         */
 
+        //Log.i("Youssef", "id of my new item " + menuItem1.getItemId() );
+        //Log.i("Youssef", "id of my next new item " + menuItem2.getItemId() );
+
+        setupNavigation();
+
+        //This is a listener for the case when the user chooses a navigation menu item. //https://developer.android.com/reference/android/support/design/widget/NavigationView.OnNavigationItemSelectedListener
+        //IT MIGHT WORK CORRECTLY USING https://www.simplifiedcoding.net/android-navigation-drawer-example-using-fragments/
+        //as long as you use the displaySelectedScreen method is defined there.
+        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() { //must be after setupWithNavController
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) { //MenuItem.OnMenuItemClickListener is any better
+                Log.i("Youssef", "order of chosen item is " + menuItem.getOrder() ); //this getOrder() is always 0 ! Could it be that it's like menu item and not a submenu tem ?? I doubt it
+                Log.i("Youssef", "order of chosen item is " + getCheckedItemOrder( navigationView ) ); //Here this is misleading, because the menu item is selected but not yet checked. The previous item is still checked, then when we close the navigation bar, the new item becomes checked.
+                //View.generateViewId(); //https://stackoverflow.com/questions/8937380/how-to-set-id-of-dynamic-created-layout
+                Log.i("Youssef", "id of chosen item is " + menuItem.getItemId() ); //gets it correctly
+                Log.i("Youssef", "title of chosen item is " + menuItem.getTitle() ); //gets it correctly
+
+                if( menuItem.getItemId() == R.id.nav_addnewitem ) {
+                    return false;
+                }
+
+                toolbar.setTitle( menuItem.getTitle() );
+                navigateToCreatedMenuItem( menuItem.getItemId(), menuItem.getTitle().toString() );
+
+                String title = menuItem.getTitle().toString();
+                if( title.equals( getString( R.string.menu_newitem ) ) ) {
+                    Log.i("Youssef", "We are requesting to make a new item");
+                }
+                drawer.closeDrawer(GravityCompat.START);
+                return true;
+                //return false; //this doesn't switch to the corresponding fragment, rather the navigation menu stalls
+            }
+        });
+
+        client_app_data = getApplicationContext().getSharedPreferences("client_app_data", MODE_PRIVATE);
 
     }
 
+        private void setupNavigation() {
+            /*
+            Set<Integer> topLevelDestinations = new HashSet<>();
+            topLevelDestinations.add(R.id.fragment1);
+            topLevelDestinations.add(R.id.fragment2);
+             */
+            int[] itemsId = new int[ menu.size() ];
+            for( int i = 0; i < menu.size(); i++ ) { //starting from i = 1 because I don't want to show the Home navigation menu item
+                itemsId[i] = menu.getItem(i).getItemId();
+                Log.i("Youssef", "id is " + itemsId[i] ); //surprisingly enough, all dynamically added items have an id of 0, yet it works in AppBarConfiguration.Builder( itemsId ), since AFAIT a repetitive 0 will implicitly refer to the added items
+            }
+            mAppBarConfiguration = new AppBarConfiguration.Builder( itemsId )
+                    .setDrawerLayout(drawer)
+                    .build();
+            //NavigationUI.setupActionBarWithNavController(this,navController,drawer);
+            NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
+            NavigationUI.setupWithNavController(navigationView, navController);
+            //NavigationUI.setupWithNavController(toolbar, navController,mAppBarConfiguration);
+/*
+            SubMenu topChannelMenu = menu.addSubMenu("Top Channels");
+            topChannelMenu.setIcon(R.drawable.ic_menu_camera);
+            MenuItem m = topChannelMenu.add("Foo");
+            m.setIcon(R.drawable.ic_menu_share);
+            topChannelMenu.add("Bar");
+            topChannelMenu.add("Baz");
+            Menu topChannelMenu1 = menu.addSubMenu("Top Channels1");
+            topChannelMenu1.add("Foo1");
+            topChannelMenu1.add("Bar1");
+            topChannelMenu1.add("Baz1");
+ */
+        }
 
+        private void createMenuItem_AlertDialog() {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Please enter the name of the new window");
+
+            // Set up the input
+            final EditText input = new EditText(this);
+            // Specify the type of input expected
+            input.setInputType(InputType.TYPE_CLASS_TEXT); // | InputType.TYPE_TEXT_VARIATION_PASSWORD); //this sets the input as a password, and will mask the text
+            builder.setView(input);
+
+            // Set up the buttons
+            builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    final String userInputText = input.getText().toString();
+                    if( userInputText.equals("") ) {
+                        return; //we won't make a change
+                    }
+                    if( userInputText.length() > 25 ) {
+                        Toast.makeText(MainActivity.this, "The name you entered is too long.",
+                                Toast.LENGTH_LONG).show();
+                        return; //we won't make a change
+                    }
+                    if( isNavigationItemNameAlreadyExisting( userInputText ) ) {
+                        Toast.makeText(MainActivity.this, "The name you entered already exists.",
+                                Toast.LENGTH_LONG).show();
+                        return; //we won't make a change
+                    }
+
+                    //Now creating the new menuItem
+                    int idOfNewMenuItem = View.generateViewId(); //this can be unnecessary
+                    Log.i("Youssef", "id of the menu item is " + idOfNewMenuItem );
+                    idOfNewMenuItem = R.id.nav_gallery;
+//                    final MenuItem createdMenuItem = menu.add( R.id.main_drawer_group, idOfNewMenuItem, 0, userInputText); //the order argument doesn't work, yet it's fine //MenuItem menuItem1 = menu.add("my new lovely item");
+                    //createdMenuItem.setTitle(userInputText);
+//                    createdMenuItem.setChecked(true); //must. A technical issue.
+
+                    MenuItem menuItem = menu.findItem(R.id.nav_gallery);
+                    menuItem.setVisible(true); //it's good but it doesn't respect the order. it will appear it in the order of the xml file
+
+                    /*
+                    navigateToCreatedMenuItem( idOfNewMenuItem, userInputText );
+                    setupNavigation(); //making it top-level (root) destination. NOT WORKING
+                     */
+                    //getLayoutInflater().inflate( R.layout.app_bar_main,null ); //crash
+/*
+                    final int idOfNewMenuItem1 = idOfNewMenuItem;
+                    createdMenuItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick( MenuItem item ) {
+                            Log.i("Youssef", "newly created menu item is clicked.");
+                            /*
+                            //this is probably not needed and it may behave undesirably
+                            ActiveFragment fragment = new ActiveFragment();
+                            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+                            ft.add(R.id.nav_host_fragment, fragment);
+                            //ft.replace(R.id.nav_host_fragment, fragment);
+                            ft.commit();
+                            //navController.navigate( fragment.getId(), bundle );
+                             */
+                            /*
+                            View v = fragment.getView();
+                            if( v != null ) {
+                                Log.i("Youssef", "view is not null");
+                            } else {
+                                Log.i("Youssef", "view is null");
+                            }
+                             */
+                            /*createdMenuItem.setChecked(true);
+                             */
+/*                            navigateToCreatedMenuItem( idOfNewMenuItem1, userInputText );
+                            createdMenuItem.setChecked(true); //must. A technical issue.
+                            //TextView textView = fragment.root.findViewById(R.id.text_active);
+                            //textView.setText("Changing everything from the main activity");
+                            return false;
+                        }
+                    });
+ */
+                }
+            });
+
+            builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.cancel();
+                }
+            });
+
+            builder.show();
+        }
+
+            private void navigateToCreatedMenuItem( int idOfNewMenuItem, String userInputText ) {
+                Bundle bundle = new Bundle();
+                bundle.putInt( "id", idOfNewMenuItem );
+                bundle.putString( "title", userInputText );
+
+
+                //navController.navigate(R.id.nav_active, bundle); //navController.navigate(R.id.nav_active); //it works on its own.
+                navController.navigate( idOfNewMenuItem, bundle );
+
+                Log.i("Youssef","right before closing the DrawerLayout. Title should be " + userInputText);
+                drawer.closeDrawer(GravityCompat.START); //after this, onResume in the fragment is called. Tested. Still, it's better to make sure using a timer or something.
+                toolbar.setTitle( userInputText ); //before navigating.
+            }
 
     @Override
     protected void onResume() {
@@ -250,7 +427,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //Related to the navigation menu. Used to know the checked navigation menu item
-        private int getCheckedItem( NavigationView navigationView ) {
+        private int getCheckedItemOrder( NavigationView navigationView ) {
             Menu menu = navigationView.getMenu();
             for (int i = 0; i < menu.size(); i++) {
                 MenuItem item = menu.getItem(i);
@@ -261,8 +438,19 @@ public class MainActivity extends AppCompatActivity {
             return -1;
         }
 
+        private boolean isNavigationItemNameAlreadyExisting( String newName ) {
+            Menu menu = navigationView.getMenu();
+            for (int i = 0; i < menu.size(); i++) {
+                MenuItem item = menu.getItem(i);
+                if( newName.equals( item.getTitle().toString() ) ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         //Related to the navigation menu. Used to rename the checked navigation menu item
-        private void getTextFromAlertDialog( MenuItem selectedMenuItem ) {
+        private void rename_AlertDialog( MenuItem selectedMenuItem ) {
             final MenuItem menuItem = selectedMenuItem;
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Renaming");
@@ -278,6 +466,19 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     String userInputText = input.getText().toString();
+                    if( userInputText.equals("") ) {
+                        return; //we won't make a change
+                    }
+                    if( userInputText.length() > 25 ) {
+                        Toast.makeText(MainActivity.this, "The name you entered is too long.",
+                                Toast.LENGTH_LONG).show();
+                        return; //we won't make a change
+                    }
+                    if( isNavigationItemNameAlreadyExisting( userInputText ) ) {
+                        Toast.makeText(MainActivity.this, "The name you entered already exists.",
+                                Toast.LENGTH_LONG).show();
+                        return; //we won't make a change
+                    }
                     menuItem.setTitle( userInputText );
                     toolbar.setTitle( userInputText ); //necessary. Another way (probably) is to change the label of the corresponding fragment.
                     /*menuItem.setIcon(R.drawable.ic_menu_send); //it works but limited can't get an image imported by user
@@ -300,12 +501,18 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
         switch( item.getItemId() ) {
-            case R.id.rename_navigation_item:
+            case R.id.homenavigationitem_menuitem:
+                navController.navigate(R.id.nav_home);
+                return true;
+            case R.id.renamenavigationitem_menuitem:
                 //we want to rename the item
-                int checkedItem = getCheckedItem( navigationView );
-                if( checkedItem != -1 ) {
-                    getTextFromAlertDialog( navigationView.getMenu().getItem( checkedItem ) );
+                int checkedItemOrder = getCheckedItemOrder( navigationView );
+                Log.i("Youssef", "checkedItemOrder is " + checkedItemOrder);
+                Log.i("Youssef", "menu size is " + navigationView.getMenu().size() );
+                if( checkedItemOrder != -1 ) {
+                    rename_AlertDialog( navigationView.getMenu().getItem( checkedItemOrder ) );
                 }
+                //surprisingly enough, navigationView.getCheckedItem().getOrder() always returns 0 thus not working right.
                 //invalidateOptionsMenu(); //https://stackoverflow.com/questions/28042070/how-to-change-the-actionbar-menu-items-icon-dynamically/35911398
                 return true;
             /*
@@ -322,7 +529,13 @@ public class MainActivity extends AppCompatActivity {
 
                 return true;
 */
-            case R.id.delete_navigation_item:
+            case R.id.deletenavigationitem_menuitem:
+
+                return true;
+            case R.id.moveupnavigationitem_menuitem:
+
+                return true;
+            case R.id.movedownnavigationitem_menuitem:
 
                 return true;
             default:

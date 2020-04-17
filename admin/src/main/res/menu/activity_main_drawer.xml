@@ -1,16 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:showIn="navigation_view">
 
-    <group android:checkableBehavior="single">
+    <group android:checkableBehavior="single"
+        android:id="@+id/main_drawer_group">
         <item
             android:id="@+id/nav_home"
             android:icon="@drawable/ic_action_home"
-            android:title="@string/menu_home" />
+            android:title="@string/menu_home"/>
+        <!--app:showAsAction="always" didn't work-->
+
         <item
             android:id="@+id/nav_gallery"
-            android:title="@string/menu_gallery" />
+            android:title="@string/menu_gallery"
+            android:visible="false"/>
+
         <item
             android:id="@+id/nav_slideshow"
             android:title="@string/menu_slideshow" />
