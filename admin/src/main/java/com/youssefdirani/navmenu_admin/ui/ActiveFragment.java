@@ -35,7 +35,7 @@ public class ActiveFragment extends Fragment {
         }
         //ConfirmationFragmentArgs.fromBundle();
 
-        root = inflater.inflate(R.layout.fragment_active, container, false);
+        root = inflater.inflate(R.layout.fragment_variousimages, container, false);
         final TextView textView = root.findViewById( R.id.text_active );
         /*
         slideshowViewModel =
