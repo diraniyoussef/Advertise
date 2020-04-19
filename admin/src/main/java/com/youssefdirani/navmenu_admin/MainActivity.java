@@ -159,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     toolbar.setTitle( menuItem.getTitle() );
                     Log.i("Youssef", "position 1.");
-                    navigateToCreatedMenuItem( menuItem.getItemId(), menuItem.getTitle().toString() );
+                    navigateToMenuItem( menuItem.getItemId(), menuItem.getTitle().toString() );
                     drawer.closeDrawer(GravityCompat.START);
                     return true;
                     //return false; //this doesn't switch to the corresponding fragment, rather the navigation menu stalls
@@ -188,26 +188,15 @@ public class MainActivity extends AppCompatActivity {
 
                     //Now creating the new menuItem
                     int idOfNewMenuItem = FragmentId[ menu.size() - 2 ]; //2 because we have the Home and the add-new-item menu items
-                    final MenuItem createdMenuItem = menu.add( R.id.main_drawer_group, idOfNewMenuItem, 0, userInputText); //the order argument doesn't work, yet it's fine
+                    final MenuItem createdMenuItem = menu.add( R.id.main_drawer_group, idOfNewMenuItem,
+                            0, userInputText ); //the order argument doesn't work, yet it's fine. I wish I could put menu.size() - 1
                     createdMenuItem.setChecked(true); //must. A technical issue.
                     Log.i("Youssef", "position 2.");
-                    navigateToCreatedMenuItem( idOfNewMenuItem, userInputText );
-                    removeAndReputAddItemMenuItem();
+                    navigateToMenuItem( idOfNewMenuItem, userInputText );
+                    removeAndReputAddItemMenuItem(); //just for ordering
                     setupAddNewItem_MenuItem();
                     setupNavigation(); //making it top-level (root) destination. NOT WORKING
                     toolbar.setTitle( userInputText );
-/*
-                    final int idOfNewMenuItem1 = idOfNewMenuItem;
-                    createdMenuItem.setOnMenuItemClickListener( new MenuItem.OnMenuItemClickListener() {
-                        @Override
-                        public boolean onMenuItemClick( MenuItem item ) {
-                            Log.i("Youssef", "newly created menu item is clicked.");
-                            navigateToCreatedMenuItem( idOfNewMenuItem1, userInputText );
-                            createdMenuItem.setChecked(true); //must. A technical issue.
-                            return false;
-                        }
-                    });
- */
                 }
 
                 private void removeAndReputAddItemMenuItem() { //this is to put this item at last
@@ -247,13 +236,13 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
 
-            private void navigateToCreatedMenuItem( int idOfNewMenuItem, String userInputText ) {
+            private void navigateToMenuItem( int idOfNewMenuItem, String userInputText ) {
                 Bundle bundle = new Bundle();
                 bundle.putInt( "id", idOfNewMenuItem );
                 bundle.putString( "title", userInputText );
                 navController.navigate( idOfNewMenuItem, bundle );
                 drawer.closeDrawer(GravityCompat.START); //after this, onResume in the fragment is called. Tested. Still, it's better to make sure using a timer or something.
-                toolbar.setTitle( userInputText ); //before navigating.
+                toolbar.setTitle( userInputText );
             }
 
     @Override
@@ -306,15 +295,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                      */
                     final SharedPreferences.Editor prefs_editor = client_app_data.edit();
-                    //prefs_editor.putString(imagePath_key, imageUriPath).apply();
-                    /*              //fortunately no need to in my case
-                    int indexOfContent = imageUriPath.indexOf("content");
-                    if( indexOfContent == -1 ) {
-                        prefs_editor.putString(imagePath_key, imageUriPath).apply();
-                    } else {
-                        prefs_editor.putString(imagePath_key, imageUriPath.substring( indexOfContent )).apply();
-                    }
-    */
+
                     final InputStream imageStream = getContentResolver().openInputStream(imageUri);
                     Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
                     selectedImage = Bitmap.createScaledBitmap(selectedImage, 220, 220, false);
@@ -343,11 +324,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //Related to the navigation menu. Used to know the checked navigation menu item
-        private int getCheckedItemOrder( NavigationView navigationView ) {
-            Menu menu = navigationView.getMenu();
-            for (int i = 0; i < menu.size(); i++) {
+        private int getCheckedItemOrder() {
+            for (int i = 0; i < menu.size(); i++) { //going till i < menu.size() - 1 is also fine, but anyway.
                 MenuItem item = menu.getItem(i);
-                if (item.isChecked()) {
+                if( item.isChecked() ) {
                     return i;
                 }
             }
@@ -411,17 +391,28 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case R.id.renamenavigationitem_menuitem:
                 //we want to rename the item
-                int checkedItemOrder = getCheckedItemOrder( navigationView );
+                int checkedItemOrder = getCheckedItemOrder();
                 Log.i("Youssef", "checkedItemOrder is " + checkedItemOrder);
-                Log.i("Youssef", "menu size is " + navigationView.getMenu().size() );
+                Log.i("Youssef", "menu size is " + menu.size() );
                 if( checkedItemOrder != -1 ) {
-                    rename_AlertDialog( navigationView.getMenu().getItem( checkedItemOrder ) );
+                    rename_AlertDialog( menu.getItem( checkedItemOrder ) );
                 }
                 //surprisingly enough, navigationView.getCheckedItem().getOrder() always returns 0 thus not working right.
                 //invalidateOptionsMenu(); //https://stackoverflow.com/questions/28042070/how-to-change-the-actionbar-menu-items-icon-dynamically/35911398
                 return true;
             case R.id.deletenavigationitem_menuitem:
-
+                checkedItemOrder = getCheckedItemOrder();
+                if( checkedItemOrder != -1 ) {
+                    if( menu.size() <= 2 ) { //actually it's == 2
+                        Toast.makeText(this, "Cannot delete the last window !", Toast.LENGTH_LONG ).show();
+                        return true;
+                    }
+                    shiftMenuItemsUp( checkedItemOrder ); //now the ids and titles are not in the coherence which was at first and this fine; we care about titles.
+                    menu.removeItem( menu.getItem( menu.size() - 2 ).getItemId() ); //Have to remove the last added item - this is the policy I'm running. The id is also FragmentId[ menu.size() - 2 ] but this is fine.
+                    //Now just navigating to the first menu item
+                    menu.getItem(0).setChecked(true);
+                    navigateToMenuItem( menu.getItem(0).getItemId(), menu.getItem(0).getTitle().toString() );
+                }
                 return true;
             case R.id.moveupnavigationitem_menuitem:
 
@@ -434,7 +425,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-        //Related to the navigation menu (header actually)
+        private void shiftMenuItemsUp(int checkedItemOrder) { //shifting titles from bottom item to the checked item. Checked item won't shift because it will be deleted
+            for( int index = checkedItemOrder + 1 ; index <= menu.size() - 2 ; index++  ) {
+                menu.getItem( index - 1 ).setTitle( menu.getItem( index ).getTitle() );
+            }
+        }
+
+    //Related to the navigation menu (header actually)
         private void loadNavMenuImage() {
             imageButton_navheadermain = findViewById(R.id.imagebutton_navheadermain);
             if( imageButton_navheadermain == null ) { //won't be null I believe
@@ -453,21 +450,8 @@ public class MainActivity extends AppCompatActivity {
                 String imagePath = client_app_data.getString(imagePath_key, "");
                 if (!imagePath.equals("")) {
                     Log.i("Youssef", "imagePath is " + imagePath);
-
                     Uri imageUri = Uri.fromFile(new File(imagePath));
-                    /*
-                try {
-                    final InputStream imageStream = getContentResolver().openInputStream(imageUri);
-                    Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
-                    selectedImage = Bitmap.createScaledBitmap(selectedImage, 220, 220, false);//https://stackoverflow.com/questions/18614255/how-to-resize-my-bitmap-as-1616-size-or-3232
-                    imageButton_navheadermain.setImageBitmap(selectedImage);
-                } catch( FileNotFoundException e) {
-                    e.printStackTrace();
-                    Toast.makeText(this, "Couldn't get image from memory", Toast.LENGTH_LONG).show();
-                }
-                 */
-                    imageButton_navheadermain.setImageURI( imageUri ); //This is an alternative to the above try-catch block. It works even if the path contains spaces.
-                    //imageButton_navheadermain.setImageURI(new Uri.Builder().appendPath( imagePath ).build()); //nice try but doesn't work
+                    imageButton_navheadermain.setImageURI( imageUri ); //It works even if the path contains spaces.
 
                 }
             }

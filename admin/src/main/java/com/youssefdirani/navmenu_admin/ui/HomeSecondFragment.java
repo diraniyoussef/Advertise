@@ -17,17 +17,6 @@ public class HomeSecondFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_home_second, container, false);
         final TextView textView = root.findViewById(R.id.text_home_second);
-        /*
-        slideshowViewModel =
-                ViewModelProviders.of(this).get(SlideshowViewModel.class);
-
-        slideshowViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
-            @Override
-            public void onChanged(@Nullable String s) {
-                textView.setText(s);
-            }
-        });
-         */
         textView.setText("I'm HomeSecondFragment"); //it works
         return root;
     }

@@ -18,20 +18,15 @@ public class ActiveFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-/*
-        Bundle bundle = getIntent().getExtras();
-        if( bundle == null ) {
-            finish();
-            return;
-        }
- */
         Log.i("Youssef", "inside ActiveFragment : no arguments");
         Bundle args = getArguments();
         if( args == null ) {
             Log.i("Youssef", "inside ActiveFragment : no arguments");
         } else {
             int idOfNewMenuItem = getArguments().getInt("id");
-            Log.i("Youssef", "inside ActiveFragment : id of the menu item is " + idOfNewMenuItem);
+            String title = getArguments().getString("title");
+            Log.i("Youssef", "inside GalleryFragment : id of the menu item is " + idOfNewMenuItem +
+                    " and title of the menu item is " + title );
         }
         //ConfirmationFragmentArgs.fromBundle();
 

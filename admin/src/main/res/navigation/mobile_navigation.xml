@@ -7,10 +7,12 @@
 
     <fragment
         android:id="@+id/nav_home"
-        android:name="com.youssefdirani.navmenu_admin.ui.home.HomeFragment"
+        android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
         android:label="@string/menu_home"
-        tools:layout="@layout/fragment_home">
-
+        >
+<!--tools:layout="@layout/fragment_home" It's meaningful
+to have it (and it was there by default), but I prefer
+not to.-->
         <action
             android:id="@+id/action_HomeFragment_to_HomeSecondFragment"
             app:destination="@id/nav_home_second" />
@@ -20,31 +22,29 @@
         android:name="com.youssefdirani.navmenu_admin.ui.HomeSecondFragment"
         android:label="@string/home_second"
         tools:layout="@layout/fragment_home_second">
-        <action
-            android:id="@+id/action_HomeSecondFragment_to_HomeFragment"
-            app:destination="@id/nav_home" />
+    <!--tools:layout="@layout/fragment_home_second"-->
+    <action
+        android:id="@+id/action_HomeSecondFragment_to_HomeFragment"
+        app:destination="@id/nav_home" />
 
-        <argument
-            android:name="myArg"
-            app:argType="string" />
-    </fragment>
+    <argument
+        android:name="myArg"
+        app:argType="string" />
+</fragment>
 
-    <fragment
-        android:id="@+id/nav_0"
-        android:name="com.youssefdirani.navmenu_admin.ui.gallery.GalleryFragment"
-        android:label="@string/menu_gallery"
-        tools:layout="@layout/fragment_gallery" />
-
+<fragment
+    android:id="@+id/nav_0"
+    android:name="com.youssefdirani.navmenu_admin.ui.GalleryFragment"
+    android:label="@string/menu_gallery" />
+<!--tools:layout="@layout/fragment_gallery"-->
     <fragment
         android:id="@+id/nav_1"
-        android:name="com.youssefdirani.navmenu_admin.ui.slideshow.SlideshowFragment"
-        android:label="@string/menu_slideshow"
-        tools:layout="@layout/fragment_slideshow" />
-
+        android:name="com.youssefdirani.navmenu_admin.ui.SlideshowFragment"
+        android:label="@string/menu_slideshow" />
+    <!--tools:layout="@layout/fragment_slideshow"-->
     <fragment
         android:id="@+id/nav_2"
         android:name="com.youssefdirani.navmenu_admin.ui.ActiveFragment"
-        android:label="@string/menu_active"
-        tools:layout="@layout/fragment_variousimages" />
-
+        android:label="@string/menu_active" />
+    <!--tools:layout="@layout/fragment_variousimages"-->
 </navigation>

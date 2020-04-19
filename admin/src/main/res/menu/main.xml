@@ -8,7 +8,7 @@
         app:showAsAction="ifRoom"
         android:title="@string/menu_home"/>
 
-    <!--android:name="com.youssefdirani.navmenu_admin.ui.home.HomeFragment"
+    <!--android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
         tools:layout="@layout/fragment_home"
         These 2 didn't work. They don't belong here anyway-->
     <item
