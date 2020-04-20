@@ -9,7 +9,7 @@
     <string name="delete_setting">Delete (admin)</string>
     <string name="moveup_setting">Move Up (admin)</string>
     <string name="movedown_setting">Move Down (admin)</string>
-    <string name="createNavSubMenu_setting_setting">Create sub-menu (admin)</string>
+    <string name="termsandconditions_menuitem">Terms And Conditions (admin)</string>
 
     <string name="menu_home">Home</string>
     <string name="menu_newitem">Add New Item (admin)</string>

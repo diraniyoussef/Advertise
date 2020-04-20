@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.Menu;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.navigation.NavigationView;
@@ -204,7 +205,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.i("Youssef", "R.id.nav_addnewitem was " + R.id.nav_addnewitem);
                     menu.removeItem(R.id.nav_addnewitem);
                     Log.i("Youssef", "R.id.nav_addnewitem is still " + R.id.nav_addnewitem);
-                    menuItem_addNewItem = menu.add( R.id.main_drawer_group, R.id.nav_addnewitem, 0, addNewItem_title);
+                    menuItem_addNewItem = menu.add( R.id.main_drawer_group, R.id.nav_addnewitem, 0, addNewItem_title );
                 }
             });
 
@@ -260,6 +261,8 @@ public class MainActivity extends AppCompatActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);//this should be before adding menus maybe. findItem https://stackoverflow.com/questions/16500415/findviewbyid-for-menuitem-returns-null (and using menu.findItem may be better than findViewById ?, not sure)
         //Log.i("Youssef", "inside onCreateOptionsMenu");
+        //menu.add(R.id.sidemenuitemgroup,25,1,"the second" );
+
         return true;
     }
 
@@ -325,7 +328,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Related to the navigation menu. Used to know the checked navigation menu item
         private int getCheckedItemOrder() {
-            for (int i = 0; i < menu.size(); i++) { //going till i < menu.size() - 1 is also fine, but anyway.
+            for( int i = 0; i < menu.size(); i++ ) { //going till i < menu.size() - 1 is also fine, but anyway.
                 MenuItem item = menu.getItem(i);
                 if( item.isChecked() ) {
                     return i;
@@ -415,12 +418,49 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return true;
             case R.id.moveupnavigationitem_menuitem:
+                checkedItemOrder = getCheckedItemOrder();
+                if( checkedItemOrder != -1 ) {
+                    if( menu.size() <= 2 ) {
+                        Toast.makeText(this, "Cannot reorder.\nJust one item exists !", Toast.LENGTH_LONG ).show();
+                        return true;
+                    }
+                    if( checkedItemOrder == 0 ) {
+                        Toast.makeText(this, "Menu Item is already on top !", Toast.LENGTH_LONG ).show();
+                        return true;
+                    }
+                    String temp_title = menu.getItem( checkedItemOrder ).getTitle().toString();
+                    menu.getItem( checkedItemOrder ).setTitle(
+                            menu.getItem( checkedItemOrder - 1 ).getTitle().toString() ).setChecked(false);
+                    menu.getItem( checkedItemOrder - 1 ).setTitle( temp_title ).setChecked(true);
 
+                    Toast.makeText(this, "Successful reordering", Toast.LENGTH_SHORT ).show();
+                }
                 return true;
             case R.id.movedownnavigationitem_menuitem:
+                checkedItemOrder = getCheckedItemOrder();
+                if( checkedItemOrder != -1 ) {
+                    if( menu.size() <= 2 ) {
+                        Toast.makeText(this, "Cannot reorder.\nJust one item exists !", Toast.LENGTH_LONG ).show();
+                        return true;
+                    }
+                    if( checkedItemOrder == menu.size() - 2 ) {
+                        Toast.makeText(this, "Menu Item is already in the bottom !", Toast.LENGTH_LONG ).show();
+                        return true;
+                    }
+                    String temp_title = menu.getItem( checkedItemOrder ).getTitle().toString();
+                    menu.getItem( checkedItemOrder ).setTitle(
+                            menu.getItem( checkedItemOrder + 1 ).getTitle().toString() ).setChecked(false);
+                    menu.getItem( checkedItemOrder + 1 ).setTitle( temp_title ).setChecked(true);
 
+                    Toast.makeText(this, "Successful reordering", Toast.LENGTH_SHORT ).show();
+                }
+                return true;
+
+            case R.id.termsandconditions_menuitem:
+                adminTermsAndConditions_AlertDialog();
                 return true;
             default:
+                Log.i("Youssef", "menu item id is " + item.getItemId() );
                 return super.onOptionsItemSelected(item);
         }
     }
@@ -431,31 +471,38 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-    //Related to the navigation menu (header actually)
-        private void loadNavMenuImage() {
-            imageButton_navheadermain = findViewById(R.id.imagebutton_navheadermain);
-            if( imageButton_navheadermain == null ) { //won't be null I believe
-                Log.i("Youssef", "imageButton_navheadermain is null");
-            } else {
-                //for the client app, it's best to store the image to sd-card and the path to shared preferences https://stackoverflow.com/questions/8586242/how-to-store-images-using-sharedpreference-in-android
-                imageButton_navheadermain.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                        photoPickerIntent.setType("image/*");
-                        startActivityForResult(photoPickerIntent, REQUEST_CODE_LOAD_IMG);
-                    }
-                });
-                //loading the image from the last known URI (if selected by user)
-                String imagePath = client_app_data.getString(imagePath_key, "");
-                if (!imagePath.equals("")) {
-                    Log.i("Youssef", "imagePath is " + imagePath);
-                    Uri imageUri = Uri.fromFile(new File(imagePath));
-                    imageButton_navheadermain.setImageURI( imageUri ); //It works even if the path contains spaces.
-
-                }
-            }
+        private void adminTermsAndConditions_AlertDialog() {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Terms And Conditions");
+            // Set up the TextView
+            final TextView output = new TextView(this);
+            output.setPadding(30,16,30,16);
+            output.setText("The following terms and conditions only apply to you 'the administrator'." +
+                    "\n" +
+                    "If you do not agree on any of the following then please don't use the app." +
+                    "\n\n" +
+                    "1) You may put any image or text that is related to your profile, your business, your company, " +
+                    "or your organization." +
+                    "\n" +
+                    "2) You may not put anything related to others without their consent (explicit or implicit)." +
+                    "\n" +
+                    "Please make sure you do not embarrass others or hurt their feelings." +
+                    "\n" +
+                    "3) You may not advertise anything that may harm others, any hateful or abusive words, " +
+                    "any violent or repulsive content, any misleading content. Nor you may encourage any of these acts." +
+                    "\n" +
+                    "4) You may not advertise, show, or encourage any alcoholic drinks, nudity (for men or women), " +
+                    "or pornography." +
+                    "\n" +
+                    "5) If you had to show any lady (others or yourself if you are a female), " +
+                    "please make sure she is wearing a vail and that her clothing is spacious and do not clearly defines " +
+                    "her body.");
+            builder.setView(output);
+            // Set up the buttons
+            builder.setPositiveButton("Ok", null);
+            builder.show();
         }
+
 
     //Called when the user presses on the stack navigation icon in order to navigate https://developer.android.com/reference/android/support/v7/app/AppCompatActivity#onSupportNavigateUp()
     @Override
@@ -467,5 +514,32 @@ public class MainActivity extends AppCompatActivity {
         return NavigationUI.navigateUp(navController, mAppBarConfiguration)
                 || super.onSupportNavigateUp();
     }
+
+        //Related to the navigation menu (header actually)
+        private void loadNavMenuImage() {
+        imageButton_navheadermain = findViewById(R.id.imagebutton_navheadermain);
+        if( imageButton_navheadermain == null ) { //won't be null I believe
+            Log.i("Youssef", "imageButton_navheadermain is null");
+        } else {
+            //for the client app, it's best to store the image to sd-card and the path to shared preferences https://stackoverflow.com/questions/8586242/how-to-store-images-using-sharedpreference-in-android
+            imageButton_navheadermain.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+                    photoPickerIntent.setType("image/*");
+                    startActivityForResult(photoPickerIntent, REQUEST_CODE_LOAD_IMG);
+                }
+            });
+            //loading the image from the last known URI (if selected by user)
+            String imagePath = client_app_data.getString(imagePath_key, "");
+            if (!imagePath.equals("")) {
+                Log.i("Youssef", "imagePath is " + imagePath);
+                Uri imageUri = Uri.fromFile(new File(imagePath));
+                imageButton_navheadermain.setImageURI( imageUri ); //It works even if the path contains spaces.
+
+            }
+        }
+    }
+
 
 }
