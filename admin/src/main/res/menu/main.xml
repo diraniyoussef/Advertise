@@ -6,13 +6,21 @@
         android:id="@+id/sidemenuitemgroup">
         <item
             android:id="@+id/homenavigationitem_menuitem"
-            android:icon="@drawable/ic_action_home"
-            app:showAsAction="ifRoom"
-            android:title="@string/menu_home"/>
-
+            android:icon="@drawable/ic_home_black_24dp"
+            android:title="@string/menu_home"
+            app:showAsAction="ifRoom" />
         <!--android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
             tools:layout="@layout/fragment_home"
             These 2 didn't work. They don't belong here anyway-->
+        <item
+            android:id="@+id/refresh_menuitem"
+            android:icon="@drawable/ic_refresh_black_24dp"
+            android:title="@string/refresh_data"
+            app:showAsAction="ifRoom" />
+        <item
+            android:id="@+id/chooseIcon_menuitem"
+            android:title="@string/chooseicon_setting"
+            />
         <item
             android:id="@+id/renamenavigationitem_menuitem"
             android:icon="@android:drawable/ic_menu_edit"
@@ -38,7 +46,7 @@
 
         <item
             android:id="@+id/termsandconditions_menuitem"
-            android:title="@string/termsandconditions_menuitem"
+            android:title="@string/termsandconditions_admin"
             app:showAsAction="never" />
 
     </group>

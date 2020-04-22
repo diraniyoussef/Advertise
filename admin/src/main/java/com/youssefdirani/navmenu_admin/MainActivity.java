@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -29,7 +30,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -249,6 +252,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        //color change
+        /*
+        https://stackoverflow.com/questions/18033260/set-background-color-android
+        https://stackoverflow.com/questions/40771900/how-to-pass-color-resource-as-parameter-android
+        toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.material_on_primary_emphasis_high_type));
+        toolbar.setTitleTextColor(ContextCompat.getColor(this, R.color.colorPrimary));
+        navigationView.setItemTextColor(...);
+        */
+
+
+
     }
 
     private final int REQUEST_CODE_LOAD_IMG = 1;
@@ -266,64 +280,74 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-        //Related to the navigation menu. Used to retrieve the image from gallery and save it
+    //Related to the navigation menu. Used to retrieve the image from gallery and save it
+        public final int CHOOSE_MENUICON_REQUESTCODE = 2;
         @Override
-        protected void onActivityResult( int reqCode, int resultCode, Intent data ) {
+        public void onActivityResult( int reqCode, int resultCode, Intent data ) {
             super.onActivityResult(reqCode, resultCode, data);
-            if (reqCode == REQUEST_CODE_LOAD_IMG && resultCode == RESULT_OK) {
-                try {
-                    final Uri imageUri = data.getData();
+            Log.i("onActivityResult", "inside");
+            switch( reqCode ) {
+                case REQUEST_CODE_LOAD_IMG:
+                    if( resultCode == RESULT_OK ) {
+                        try {
+                            final Uri imageUri = data.getData();
 
-                    if( imageUri == null ) {//should never happen
-                        Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                    /* //maybe unsuccesful tries were they
-                    //String imageUriPath = imageUri.getPath(); //it returned somthing like this content://media/external/images/media/20753/ORIGINAL/NONE/image/jpeg/1085094180 with some more defects
-                    //String imageUriPath = imageUri.getEncodedPath();
-                    //String imageUriPath = imageUri.getLastPathSegment();
-                    */
-                    //String imageUriPath = getRealPathFromURI(imageUri); //returned the following /storage/emulated/0/WhatsApp/Media/WhatsApp Images/IMG-20200326-WA0007.jpeg
-                    /* //this might be an alternative to getRealPathFromURI
-                    try {
-                        String imageUriPath = new File(new URI(imageUri.getPath())).getAbsolutePath();
-                    } catch( Exception e ) {
+                            if (imageUri == null) {//should never happen
+                                Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
+                                return;
+                            }
+                            final SharedPreferences.Editor prefs_editor = client_app_data.edit();
 
+                            final InputStream imageStream = getContentResolver().openInputStream(imageUri);
+                            Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
+                            selectedImage = Bitmap.createScaledBitmap(selectedImage, 220, 220, false);
+                            //saving the image in the scaled size
+                            String imagePath = getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                                    + File.separator + "navmenu.jpg";
+                            File f = new File(imagePath); //https://stackoverflow.com/questions/57116335/environment-getexternalstoragedirectory-deprecated-in-api-level-29-java and https://developer.android.com/reference/android/content/Context#getExternalFilesDirs(java.lang.String)
+                            OutputStream fOut = new FileOutputStream(f);
+                            selectedImage.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
+                            fOut.flush();
+                            fOut.close();
+                            prefs_editor.putString(imagePath_key, imagePath).apply();
+                            imageButton_navheadermain.setImageBitmap(selectedImage);
+
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                            Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
+                        } catch (IOException e) { //for the sake of fOut.flush and .close
+                            e.printStackTrace();
+                            Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
+                        }
                     }
-                    */
+                    break;
                     /*
-                    if( imageUriPath == null ) {
-                        Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
-                        return;
+                case CHOOSE_MENUICON_REQUESTCODE:
+                    if( resultCode == RESULT_OK ) {
+                        int icon_drawable_id = data.getExtras().getInt("icon_drawable_id");
+                        Log.i("ChooseMenuIconFragment", "icon name is " + icon_drawable_id );
+                        Drawable myIcon = getResources().getDrawable( icon_drawable_id );
+                        //menu.getItem( getCheckedItemOrder() ).setIcon(R.drawable.ic_menu_camera);
+                        menu.getItem( getCheckedItemOrder() ).setIcon( myIcon );
                     }
+                    break;
                      */
-                    final SharedPreferences.Editor prefs_editor = client_app_data.edit();
-
-                    final InputStream imageStream = getContentResolver().openInputStream(imageUri);
-                    Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
-                    selectedImage = Bitmap.createScaledBitmap(selectedImage, 220, 220, false);
-                    //saving the image in the scaled size
-                    String imagePath = getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-                            + File.separator + "navmenu.jpg";
-                    File f = new File( imagePath ); //https://stackoverflow.com/questions/57116335/environment-getexternalstoragedirectory-deprecated-in-api-level-29-java and https://developer.android.com/reference/android/content/Context#getExternalFilesDirs(java.lang.String)
-                    OutputStream fOut = new FileOutputStream(f);
-                    selectedImage.compress( Bitmap.CompressFormat.JPEG, 100, fOut );
-                    fOut.flush();
-                    fOut.close();
-                    prefs_editor.putString(imagePath_key, imagePath).apply();
-                    imageButton_navheadermain.setImageBitmap(selectedImage);
-
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                    Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
-                } catch (IOException e) { //for the sake of fOut.flush and .close
-                    e.printStackTrace();
-                    Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
-                }
-
-            } else {
-                Toast.makeText(this, "You haven't picked Image", Toast.LENGTH_LONG).show();
+                default:
+                    break;
             }
+        }
+
+        //these 3 methods better be implementation of an interface defined in class ChooseMenuIconFragment
+        public void disappearChooseNavigationIcon_MenuItem() {
+            toolbar.getMenu().findItem(R.id.chooseIcon_menuitem).setVisible(false);
+        }
+        public void appearChooseNavigationIcon_MenuItem() {
+            toolbar.getMenu().findItem(R.id.chooseIcon_menuitem).setVisible(true);
+        }
+        public void setIconOfCheckedNavMenuItem( Drawable icon, int nav_menuitem_index ) {
+            //since getCheckedItemOrder() when called from ChooseNavMenuIconFragment can't know the index (order), so we're using nav_menuitem_index
+            //Log.i("seticon", "item index is " + getCheckedItemOrder());
+            menu.getItem( nav_menuitem_index ).setIcon( icon );
         }
 
         //Related to the navigation menu. Used to know the checked navigation menu item
@@ -338,7 +362,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private boolean isNavigationItemNameAlreadyExisting( String newName ) {
-            Menu menu = navigationView.getMenu();
             for (int i = 0; i < menu.size(); i++) {
                 MenuItem item = menu.getItem(i);
                 if( newName.equals( item.getTitle().toString() ) ) {
@@ -391,6 +414,15 @@ public class MainActivity extends AppCompatActivity {
             case R.id.homenavigationitem_menuitem:
                 navController.navigate(R.id.nav_home);
                 toolbar.setTitle( menu.findItem( R.id.nav_home ).getTitle() );
+                return true;
+            case R.id.refresh_menuitem:
+
+                return true;
+            case R.id.chooseIcon_menuitem:
+                //ChooseMenuIconFragment chooseMenuIconFragment = new ChooseMenuIconFragment();
+                Bundle bundle = new Bundle();
+                bundle.putInt( "index_of_navmenuitem" , getCheckedItemOrder() ); //for technical reasons, I have to pass in the checked menu item now. That is because after getting out of ChooseNavMenuIconFragment class, we cannot determine the checked menu item (weird but this is what happens)
+                navController.navigate( R.id.nav_menuicon, bundle );
                 return true;
             case R.id.renamenavigationitem_menuitem:
                 //we want to rename the item
@@ -459,6 +491,7 @@ public class MainActivity extends AppCompatActivity {
             case R.id.termsandconditions_menuitem:
                 adminTermsAndConditions_AlertDialog();
                 return true;
+
             default:
                 Log.i("Youssef", "menu item id is " + item.getItemId() );
                 return super.onOptionsItemSelected(item);
@@ -496,7 +529,9 @@ public class MainActivity extends AppCompatActivity {
                     "\n" +
                     "5) If you had to show any lady (others or yourself if you are a female), " +
                     "please make sure she is wearing a vail and that her clothing is spacious and do not clearly defines " +
-                    "her body.");
+                    "her body." +
+                    "\n\n" +
+                    "For any technical assistance, please contact the developer +961/70/853721");
             builder.setView(output);
             // Set up the buttons
             builder.setPositiveButton("Ok", null);
@@ -540,6 +575,5 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
 
 }

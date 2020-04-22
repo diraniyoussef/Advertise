@@ -23,28 +23,33 @@ not to.-->
         android:label="@string/home_second"
         tools:layout="@layout/fragment_home_second">
     <!--tools:layout="@layout/fragment_home_second"-->
-    <action
-        android:id="@+id/action_HomeSecondFragment_to_HomeFragment"
-        app:destination="@id/nav_home" />
+        <action
+            android:id="@+id/action_HomeSecondFragment_to_HomeFragment"
+            app:destination="@id/nav_home" />
 
-    <argument
-        android:name="myArg"
-        app:argType="string" />
-</fragment>
+        <argument
+            android:name="myArg"
+            app:argType="string" />
+    </fragment>
 
-<fragment
-    android:id="@+id/nav_0"
-    android:name="com.youssefdirani.navmenu_admin.ui.GalleryFragment"
-    android:label="@string/menu_gallery" />
-<!--tools:layout="@layout/fragment_gallery"-->
+    <fragment
+        android:id="@+id/nav_0"
+        android:name="com.youssefdirani.navmenu_admin.ui.Fragment0"
+        android:label="@string/menu_0" />
+<!--tools:layout="@layout/fragment_0"-->
     <fragment
         android:id="@+id/nav_1"
-        android:name="com.youssefdirani.navmenu_admin.ui.SlideshowFragment"
-        android:label="@string/menu_slideshow" />
-    <!--tools:layout="@layout/fragment_slideshow"-->
+        android:name="com.youssefdirani.navmenu_admin.ui.Fragment1"
+        android:label="@string/menu_1" />
+    <!--tools:layout="@layout/fragment_1"-->
     <fragment
         android:id="@+id/nav_2"
-        android:name="com.youssefdirani.navmenu_admin.ui.ActiveFragment"
-        android:label="@string/menu_active" />
-    <!--tools:layout="@layout/fragment_variousimages"-->
+        android:name="com.youssefdirani.navmenu_admin.ui.Fragment2"
+        android:label="@string/menu_2" />
+
+    <fragment
+        android:id="@+id/nav_menuicon"
+        android:name="com.youssefdirani.navmenu_admin.ui.ChooseNavMenuIconFragment"
+        android:label="@string/chooseicon_title" />
+    <!--tools:layout="@layout/fragment_2"-->
 </navigation>

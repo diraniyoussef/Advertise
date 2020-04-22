@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
@@ -36,10 +37,6 @@ public class HomeFragment extends Fragment {
         super.onAttach(context);
         _onAttach(context);
     }
-    public interface OnHomeSelectedListener {
-        public void onArticleSelected(int position);
-    }
-    OnHomeSelectedListener mCallback;
     Activity activity = null;
     private void _onAttach(Context context) { //it gets called twice
         Log.i("Youssef", "inside HomeFragment _onAttach");

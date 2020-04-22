@@ -1,0 +1,22 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="saveourcar.soc.MainActivity">
+    <item
+        android:id="@+id/action_Menu"
+        android:orderInCategory="100"
+        android:title="Menu"
+        app:showAsAction="never" >
+        <menu>
+            <item
+                android:id="@+id/instructions"
+                android:title="Instructions"
+                android:icon="@drawable/ic_remove_red_eye_black_24dp"/>
+            <item
+                android:id="@+id/hotels"
+                android:title="Hotels"
+                android:icon="@drawable/ic_weekend_black_24dp"/>
+
+        </menu>
+    </item>
+</menu>
