@@ -344,9 +344,11 @@ public class MainActivity extends AppCompatActivity {
         public void appearChooseNavigationIcon_MenuItem() {
             toolbar.getMenu().findItem(R.id.chooseIcon_menuitem).setVisible(true);
         }
-        public void setIconOfCheckedNavMenuItem( Drawable icon, int nav_menuitem_index ) {
+        public void setIconOfCheckedNavMenuItem( String tag, int nav_menuitem_index ) {
             //since getCheckedItemOrder() when called from ChooseNavMenuIconFragment can't know the index (order), so we're using nav_menuitem_index
             //Log.i("seticon", "item index is " + getCheckedItemOrder());
+            int icon_drawable_id = getResources().getIdentifier( tag, "drawable", getPackageName() );
+            Drawable icon = getResources().getDrawable( icon_drawable_id );
             menu.getItem( nav_menuitem_index ).setIcon( icon );
         }
 
@@ -447,6 +449,7 @@ public class MainActivity extends AppCompatActivity {
                     //Now just navigating to the first menu item
                     menu.getItem(0).setChecked(true);
                     navigateToMenuItem( menu.getItem(0).getItemId(), menu.getItem(0).getTitle().toString() );
+                    Toast.makeText(this, "Successful Deletion", Toast.LENGTH_SHORT ).show();
                 }
                 return true;
             case R.id.moveupnavigationitem_menuitem:
@@ -461,9 +464,15 @@ public class MainActivity extends AppCompatActivity {
                         return true;
                     }
                     String temp_title = menu.getItem( checkedItemOrder ).getTitle().toString();
-                    menu.getItem( checkedItemOrder ).setTitle(
-                            menu.getItem( checkedItemOrder - 1 ).getTitle().toString() ).setChecked(false);
-                    menu.getItem( checkedItemOrder - 1 ).setTitle( temp_title ).setChecked(true);
+                    Drawable temp_drawable = menu.getItem( checkedItemOrder ).getIcon();
+                    menu.getItem( checkedItemOrder )
+                            .setTitle( menu.getItem( checkedItemOrder - 1 ).getTitle().toString() )
+                            .setIcon( menu.getItem( checkedItemOrder - 1 ).getIcon() )
+                            .setChecked(false);
+                    menu.getItem( checkedItemOrder - 1 )
+                            .setTitle( temp_title )
+                            .setIcon( temp_drawable )
+                            .setChecked(true);
 
                     Toast.makeText(this, "Successful reordering", Toast.LENGTH_SHORT ).show();
                 }
@@ -480,10 +489,15 @@ public class MainActivity extends AppCompatActivity {
                         return true;
                     }
                     String temp_title = menu.getItem( checkedItemOrder ).getTitle().toString();
-                    menu.getItem( checkedItemOrder ).setTitle(
-                            menu.getItem( checkedItemOrder + 1 ).getTitle().toString() ).setChecked(false);
-                    menu.getItem( checkedItemOrder + 1 ).setTitle( temp_title ).setChecked(true);
-
+                    Drawable temp_drawable = menu.getItem( checkedItemOrder ).getIcon();
+                    menu.getItem( checkedItemOrder )
+                            .setTitle( menu.getItem( checkedItemOrder + 1 ).getTitle().toString() )
+                            .setIcon( menu.getItem( checkedItemOrder + 1 ).getIcon() )
+                            .setChecked(false);
+                    menu.getItem( checkedItemOrder + 1 )
+                            .setTitle( temp_title )
+                            .setIcon( temp_drawable )
+                            .setChecked(true);
                     Toast.makeText(this, "Successful reordering", Toast.LENGTH_SHORT ).show();
                 }
                 return true;

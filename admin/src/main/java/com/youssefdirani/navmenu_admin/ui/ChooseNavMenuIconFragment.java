@@ -35,12 +35,8 @@ public class ChooseNavMenuIconFragment extends Fragment {
         if( args == null ) {
             Log.i("Youssef", "inside ChooseNavMenuIconFragment : no arguments");
         } else {
-            final int indexOfNewMenuItem = getArguments().getInt("index_of_navmenuitem");
+            final int indexOfNewMenuItem = getArguments().getInt("index_of_navmenuitem");//for technical reasons, I have to pass in the checked menu item now. That is because after getting out of ChooseNavMenuIconFragment class, we cannot determine the checked menu item (weird but this is what happens)
 
-            //final TextView textView = root.findViewById( R.id.text_active );
-            //textView.setText("I'm an active fragment"); //it works
-
-            //activity.getSupportFragmentManager().beginTransaction().remove(this).commit();
             activity = (MainActivity) getActivity();
             activity.disappearChooseNavigationIcon_MenuItem();
 
@@ -48,12 +44,13 @@ public class ChooseNavMenuIconFragment extends Fragment {
                 @Override
                 public void onClick(View v) {
                     ImageButton imageButton = (ImageButton) v;
-                    Drawable icon_drawable = imageButton.getDrawable(); //R.drawable.ic_remove_red_eye_black_24dp; //R.drawable.ic_action_home
+                    //Drawable icon_drawable = imageButton.getDrawable(); //R.drawable.ic_remove_red_eye_black_24dp; //R.drawable.ic_action_home
+                    String tag = v.getTag().toString();
+                    Log.i("ChooseMenuIconFragment", "inside onClick " + tag );
+                    //int id = Integer.parseInt( tag );
 
-                    activity.setIconOfCheckedNavMenuItem(icon_drawable, indexOfNewMenuItem);
+                    activity.setIconOfCheckedNavMenuItem( tag, indexOfNewMenuItem);
                     activity.onBackPressed(); //better than activity.getSupportFragmentManager().popBackStack(); //https://stackoverflow.com/questions/2717954/android-simulate-back-button
-                    //activity.onActivityResult( activity.CHOOSE_MENUICON_REQUESTCODE, RESULT_OK,
-                    //        new Intent().putExtra("icon_drawable_id", icon_drawable_id ) );
                 }
             };
             root.findViewById(R.id.imagebutton_ic_menu_camera).setOnClickListener(onClickListener);
