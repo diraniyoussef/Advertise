@@ -38,7 +38,7 @@ public class ChooseNavMenuIconFragment extends Fragment {
             final int indexOfNewMenuItem = getArguments().getInt("index_of_navmenuitem");//for technical reasons, I have to pass in the checked menu item now. That is because after getting out of ChooseNavMenuIconFragment class, we cannot determine the checked menu item (weird but this is what happens)
 
             activity = (MainActivity) getActivity();
-            activity.disappearChooseNavigationIcon_MenuItem();
+            //activity.disappearChooseNavigationIcon_MenuItem();
 
             View.OnClickListener onClickListener = new View.OnClickListener() {
                 @Override
@@ -51,6 +51,7 @@ public class ChooseNavMenuIconFragment extends Fragment {
 
                     activity.setIconOfCheckedNavMenuItem( tag, indexOfNewMenuItem);
                     activity.onBackPressed(); //better than activity.getSupportFragmentManager().popBackStack(); //https://stackoverflow.com/questions/2717954/android-simulate-back-button
+                    activity.updateToolbarTitle( indexOfNewMenuItem ); //unfortunately needed.
                 }
             };
             root.findViewById(R.id.imagebutton_ic_menu_camera).setOnClickListener(onClickListener);
@@ -91,6 +92,6 @@ public class ChooseNavMenuIconFragment extends Fragment {
         Log.i("ChooseMenuIconFragment", "inside onPause");
         //MUST RETURN SOMETHING USING onActivityResult(...); that is for technical reasons.
         //activity.onActivityResult( activity.CHOOSE_MENUICON_REQUESTCODE, RESULT_CANCELED,null );
-        activity.appearChooseNavigationIcon_MenuItem();
+        //activity.appearChooseNavigationIcon_MenuItem();
     }
 }

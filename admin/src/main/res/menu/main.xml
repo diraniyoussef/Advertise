@@ -5,44 +5,75 @@
     <group
         android:id="@+id/sidemenuitemgroup">
         <item
-            android:id="@+id/homenavigationitem_menuitem"
+            android:id="@+id/homenavigationitem_mainmenuitem"
             android:icon="@drawable/ic_home_black_24dp"
-            android:title="@string/menu_home"
+            android:title="@string/home_title"
             app:showAsAction="ifRoom" />
         <!--android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
             tools:layout="@layout/fragment_home"
             These 2 didn't work. They don't belong here anyway-->
         <item
-            android:id="@+id/refresh_menuitem"
+            android:id="@+id/refresh_mainmenuitem"
             android:icon="@drawable/ic_refresh_black_24dp"
             android:title="@string/refresh_data"
             app:showAsAction="ifRoom" />
         <item
-            android:id="@+id/chooseIcon_menuitem"
-            android:title="@string/chooseicon_setting"
-            />
+            android:id="@+id/topbar_actionmenu"
+            android:title="Top Bar (admin)"
+            app:showAsAction="never" >
+            <!--android:orderInCategory="100"-->
+            <menu>
+                <item
+                    android:id="@+id/topbar_tabcolor"
+                    android:icon="@drawable/ic_format_paint_black_24dp"
+                    android:title="Assign Color" />
+            </menu>
+        </item>
+
         <item
-            android:id="@+id/renamenavigationitem_menuitem"
-            android:icon="@android:drawable/ic_menu_edit"
-            android:title="@string/rename_setting"
-             />
-        <!--android:orderInCategory="100"
-        app:showAsAction="never"-->
-        <item
-            android:id="@+id/deletenavigationitem_menuitem"
-            android:icon="@android:drawable/ic_menu_delete"
-            android:title="@string/delete_setting"
-            app:showAsAction="never" />
-        <!--icon may not show by default
-        https://stackoverflow.com/questions/19750635/icon-in-menu-not-showing-in-android-->
-        <item
-            android:id="@+id/moveupnavigationitem_menuitem"
-            android:title="@string/moveup_setting"
-            app:showAsAction="never" />
-        <item
-            android:id="@+id/movedownnavigationitem_menuitem"
-            android:title="@string/movedown_setting"
-            app:showAsAction="never" />
+            android:id="@+id/bottombar_actionmenu"
+            android:title="Bottom Bar (admin)"
+            app:showAsAction="never" >
+            <!--android:orderInCategory="100"-->
+            <menu>
+                <item
+                    android:id="@+id/bottombar_add"
+                    android:icon="@android:drawable/ic_menu_add"
+                    android:title="Add" />
+                <group
+                    android:id="@+id/bottombar_exists"
+                    android:visible="false">
+                    <item
+                        android:id="@+id/bottombar_remove"
+                        android:icon="@android:drawable/ic_menu_delete"
+                        android:title="Delete" />
+                    <item
+                        android:id="@+id/bottombar_color"
+                        android:icon="@drawable/ic_format_paint_black_24dp"
+                        android:title="Assign Color" />
+                    <item
+                        android:id="@+id/bottombar_addtab"
+                        android:icon="@android:drawable/ic_menu_add"
+                        android:title="Add Tab" />
+                    <item
+                        android:id="@+id/bottombar_renametab"
+                        android:icon="@android:drawable/ic_menu_edit"
+                        android:title="Rename Tab" />
+                    <item
+                        android:id="@+id/bottombar_deletetab"
+                        android:icon="@android:drawable/ic_menu_delete"
+                        android:title="Delete Tab" />
+                    <item
+                        android:id="@+id/bottombar_movetabright"
+                        android:icon="@drawable/ic_keyboard_arrow_right_black_24dp"
+                        android:title="Move Tab Right" />
+                    <item
+                        android:id="@+id/bottombar_movetableft"
+                        android:icon="@drawable/ic_navigate_before_black_24dp"
+                        android:title="Move Tab Left" />
+                </group>
+            </menu>
+        </item>
 
         <item
             android:id="@+id/termsandconditions_menuitem"

@@ -3,53 +3,41 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@id/nav_home"> <!--startDestination is really the first appearing fragment when the app starts-->
+    app:startDestination="@id/nav_home"> <!--app:startDestination="@id/nav_home" startDestination is really the first appearing fragment when the app starts-->
 
     <fragment
         android:id="@+id/nav_home"
         android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
-        android:label="@string/menu_home"
-        >
-<!--tools:layout="@layout/fragment_home" It's meaningful
-to have it (and it was there by default), but I prefer
-not to.-->
-        <action
-            android:id="@+id/action_HomeFragment_to_HomeSecondFragment"
-            app:destination="@id/nav_home_second" />
-    </fragment>
+        android:label="@string/home_title" />
     <fragment
-        android:id="@+id/nav_home_second"
-        android:name="com.youssefdirani.navmenu_admin.ui.HomeSecondFragment"
-        android:label="@string/home_second"
-        tools:layout="@layout/fragment_home_second">
-    <!--tools:layout="@layout/fragment_home_second"-->
-        <action
-            android:id="@+id/action_HomeSecondFragment_to_HomeFragment"
-            app:destination="@id/nav_home" />
-
-        <argument
-            android:name="myArg"
-            app:argType="string" />
-    </fragment>
-
+        android:id="@+id/nav_fragment1"
+        android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
+        android:label="@string/home_title" />
     <fragment
-        android:id="@+id/nav_0"
-        android:name="com.youssefdirani.navmenu_admin.ui.Fragment0"
-        android:label="@string/menu_0" />
-<!--tools:layout="@layout/fragment_0"-->
+        android:id="@+id/nav_fragment2"
+        android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
+        android:label="@string/home_title" />
     <fragment
-        android:id="@+id/nav_1"
-        android:name="com.youssefdirani.navmenu_admin.ui.Fragment1"
-        android:label="@string/menu_1" />
-    <!--tools:layout="@layout/fragment_1"-->
+        android:id="@+id/nav_fragment3"
+        android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
+        android:label="@string/home_title" />
     <fragment
-        android:id="@+id/nav_2"
-        android:name="com.youssefdirani.navmenu_admin.ui.Fragment2"
-        android:label="@string/menu_2" />
+        android:id="@+id/nav_fragment4"
+        android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
+        android:label="@string/home_title" />
+    <fragment
+        android:id="@+id/nav_fragment5"
+        android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
+        android:label="@string/home_title" />
 
     <fragment
         android:id="@+id/nav_menuicon"
         android:name="com.youssefdirani.navmenu_admin.ui.ChooseNavMenuIconFragment"
         android:label="@string/chooseicon_title" />
     <!--tools:layout="@layout/fragment_2"-->
+    <fragment
+        android:id="@+id/nav_color"
+        android:name="com.youssefdirani.navmenu_admin.ui.ChooseNavMenuIconFragment"
+        android:label="@string/choosecolor_title" />
+
 </navigation>

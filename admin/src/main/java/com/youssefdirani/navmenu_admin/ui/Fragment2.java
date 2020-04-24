@@ -30,8 +30,8 @@ public class Fragment2 extends Fragment {
         }
         //ConfirmationFragmentArgs.fromBundle();
 
-        root = inflater.inflate(R.layout.fragment_2, container, false);
-        final TextView textView = root.findViewById( R.id.text_active );
+        root = inflater.inflate(R.layout.fragment_home, container, false);
+        final TextView textView = root.findViewById( R.id.text_home );
         /*
         slideshowViewModel =
                 ViewModelProviders.of(this).get(SlideshowViewModel.class);

@@ -47,13 +47,16 @@ public class HomeFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) { //we enter this between onCreate and onStart - tested
         //container is nav_host_fragment and not mobile_navigation. Tested
-
+        String title;
         Bundle args = getArguments();
         if( args == null ) {
+            title = "Welcome and thank you for using this app.\n" +
+                    "Please wait while we fetch data from the server.";
             Log.i("Youssef", "inside HomeFragment : no arguments");
         } else {
             int idOfNewMenuItem = getArguments().getInt("id");
-            String title = getArguments().getString("title");
+
+            title = getArguments().getString("title");
             Log.i("Youssef", "inside HomeFragment : id of the menu item is " + idOfNewMenuItem +
                     " and title of the menu item is " + title );
             //I don't care about the id. The title determines which database table to fetch
@@ -61,15 +64,9 @@ public class HomeFragment extends Fragment {
 
         root = inflater.inflate(R.layout.fragment_home, container, false);
         final TextView textView = root.findViewById(R.id.text_home);
-        textView.setText("Home");
+        textView.setText( title );
 
-        root.findViewById(R.id.home_button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Navigation.findNavController(view).navigate(R.id.action_HomeFragment_to_HomeSecondFragment);
-            }
-        });
-
+        /*
         //it works
         LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -78,7 +75,7 @@ public class HomeFragment extends Fragment {
         tv.setText("dynamic text view");
         LinearLayout linearLayout = root.findViewById(R.id.layout_of_fragment_home);
         linearLayout.addView(tv);
-
+        */
         return root;
     }
 
@@ -86,6 +83,11 @@ public class HomeFragment extends Fragment {
     public void onStart() {
         super.onStart();
         Log.i("Youssef", "inside HomeFragment : onStart");
+    }
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.i("Youssef", "inside HomeFragment : onResume");
     }
     @Override
     public void onPause() {

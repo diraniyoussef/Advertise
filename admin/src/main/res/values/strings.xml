@@ -6,20 +6,24 @@
     <string name="nav_header_subtitle">wonderful.admin@admin_website.com</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="refresh_data">Refresh From Server</string>
-    <string name="chooseicon_setting">Choose Navigation Icon (admin)</string>
-    <string name="rename_setting">Rename (admin)</string>
-    <string name="delete_setting">Delete (admin)</string>
-    <string name="moveup_setting">Move Up (admin)</string>
-    <string name="movedown_setting">Move Down (admin)</string>
-    <string name="termsandconditions_admin">Terms And Conditions (admin)</string>
 
-    <string name="menu_home">Home</string>
-    <string name="menu_newitem">Add New Item (admin)</string>
-    <string name="menu_0">Gallery</string>
-    <string name="menu_1">Slideshow</string>
-    <string name="menu_2">The Active</string>
+    <string name="homesecond_title">Home Second</string>
+    <string name="home_title">Home</string>
+    <string name="fragment0_title">Gallery</string>
+    <string name="fragment1_title">Slideshow</string>
+    <string name="fragment2_title">The Active</string>
     <string name="chooseicon_title">Choose Icon for Navigation Menu</string>
+    <string name="choosecolor_title">Choose Color</string>
 
+    <string name="newitem_submenu">Add New Item</string>
+    <string name="chooseicon_submenu">Choose Item Icon</string>
+    <string name="rename_submenu">Rename Item</string>
+    <string name="delete_submenu">Delete Item</string>
+    <string name="moveup_setting">Move Up</string>
+    <string name="movedown_setting">Move Down</string>
 
-    <string name="home_second">Home Second</string>
+    <string name="drawer_open">Drawer is opening</string>
+    <string name="drawer_close">Drawer is closing</string>
+
+    <string name="termsandconditions_admin">Terms And Conditions (admin)</string>
 </resources>
