@@ -18,15 +18,41 @@
             android:title="@string/refresh_data"
             app:showAsAction="ifRoom" />
         <item
+            android:id="@+id/statusbar_actionmenu"
+            android:title="Status Bar (admin)"
+            app:showAsAction="never" >
+            <!--android:orderInCategory="100"-->
+            <menu>
+                <item
+                    android:id="@+id/statusbar_color"
+                    android:icon="@drawable/ic_format_paint_black_24dp"
+                    android:title="Assign Background Color" />
+                <item
+                    android:id="@+id/statusbar_iconcolor"
+                    android:icon="@drawable/ic_star_half_black_24dp"
+                    android:checkable="true"
+                    android:checked="false"
+                    android:title="Icons Tint Dark" />
+            </menu>
+        </item>
+        <item
             android:id="@+id/topbar_actionmenu"
             android:title="Top Bar (admin)"
             app:showAsAction="never" >
             <!--android:orderInCategory="100"-->
             <menu>
                 <item
-                    android:id="@+id/topbar_tabcolor"
+                    android:id="@+id/topbar_backgroundcolor"
                     android:icon="@drawable/ic_format_paint_black_24dp"
-                    android:title="Assign Color" />
+                    android:title="Assign Background Color" />
+                <item
+                    android:id="@+id/topbar_titlecolor"
+                    android:icon="@drawable/ic_format_color_text_black_24dp"
+                    android:title="Assign Title Color" />
+                <item
+                    android:id="@+id/topbar_3dotscolor"
+                    android:icon="@drawable/ic_more_vert_black_24dp"
+                    android:title="Assign 3-dots Color" />
             </menu>
         </item>
 

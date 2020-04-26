@@ -25,7 +25,7 @@
             <item
                 android:id="@+id/nav_color"
                 android:icon="@drawable/ic_format_paint_black_24dp"
-                android:title="Assign Color" />
+                android:title="Assign Background Color" />
             <item
                 android:id="@+id/nav_addnewitem"
                 android:icon="@android:drawable/ic_menu_add"

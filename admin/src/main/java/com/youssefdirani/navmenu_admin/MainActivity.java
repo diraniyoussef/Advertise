@@ -7,8 +7,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.InputType;
@@ -19,8 +21,11 @@ import android.view.MenuItem;
 import android.view.SubMenu;
 import android.view.View;
 import android.view.Menu;
+import android.view.Window;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,14 +44,19 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.constraintlayout.widget.Group;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.navigation.NavController;
+import androidx.navigation.NavDestination;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+
+import static android.content.res.Resources.getSystem;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -114,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        Log.i("Youssef", "inside MainActivity : onCreate");
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -124,7 +134,6 @@ public class MainActivity extends AppCompatActivity {
         menu = navigationView.getMenu();
 
         setupNavigation();
-
 
         // Set the drawer toggle as the DrawerListener
         drawer.addDrawerListener( new ActionBarDrawerToggle(this, drawer,
@@ -231,6 +240,13 @@ public class MainActivity extends AppCompatActivity {
         });
 
         client_app_data = getApplicationContext().getSharedPreferences("client_app_data", MODE_PRIVATE);
+/*
+        FragmentManager fragmentManager = getSupportFragmentManager(); // not null and can be useful
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction(); //not null
+        //Fragment fragment = fragmentManager.findFragmentByTag("home fragment tag"); //is null unfortunately
+        //fragmentManager.getFragmentFactory()
+ */
+
     }
 
     private final String Delete_Item = "delete item";
@@ -260,7 +276,9 @@ public class MainActivity extends AppCompatActivity {
                     switch( menuItem.getItemId() ) {
                         case R.id.nav_color:
                             Bundle bundle = new Bundle();
-                            bundle.putInt( "index_of_navmenuitem" , getCheckedItemOrder() ); //for technical reasons, I have to pass in the checked menu item now. like not being able to determine the checked menu item (weird). Not sure if it really needed, but anyway.
+                            bundle.putInt( "id_of_layout" , R.id.linearlayout_navheader ); //for technical reasons, I have to pass in the checked menu item now. That is because after getting out of ChooseNavMenuIconFragment class, we cannot determine the checked menu item (weird but this is what happens)
+                            bundle.putInt( "index_of_navmenuitem" , getCheckedItemOrder() );
+                            bundle.putString( "action", "navigation layout background" );
                             navController.navigate( R.id.nav_color, bundle );
                             drawer.closeDrawer(GravityCompat.START);
                             return true;
@@ -413,7 +431,7 @@ public class MainActivity extends AppCompatActivity {
             toolbar.setTitle( title );
         }
 
-    private boolean isUserInputTextNotFine(@org.jetbrains.annotations.NotNull String userInputText ) {
+           private boolean isUserInputTextNotFine(@org.jetbrains.annotations.NotNull String userInputText ) {
                 final int Max_Menu_Item_Chars = 25;
                 if( userInputText.equals("") ) {
                     return true; //we won't make a change
@@ -431,16 +449,35 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
 
-            private void navigateToMenuItem( int idOfNewMenuItem, String userInputText ) {
-                Bundle bundle = new Bundle();
-                bundle.putInt( "id", idOfNewMenuItem );
-                bundle.putString( "title", userInputText );
-                navController.navigate( idOfNewMenuItem, bundle );
-                menu.findItem( idOfNewMenuItem ).setChecked(true);
-                drawer.closeDrawer(GravityCompat.START); //after this, onResume in the fragment is called. Tested. Still, it's better to make sure using a timer or something.
-                toolbar.setTitle( userInputText );
-            }
-
+                private void navigateToMenuItem( int idOfNewMenuItem, String userInputText ) {
+                    Bundle bundle = new Bundle();
+                    bundle.putInt( "id", idOfNewMenuItem );
+                    bundle.putString( "title", userInputText );
+                    navController.navigate( idOfNewMenuItem, bundle );
+                    menu.findItem( idOfNewMenuItem ).setChecked(true);
+                    drawer.closeDrawer(GravityCompat.START); //after this, onResume in the fragment is called. Tested. Still, it's better to make sure using a timer or something.
+                    toolbar.setTitle( userInputText );
+                }
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.i("Youssef", "inside MainActivity : onStart");
+    }
+    @Override
+    public void onPause() {
+        super.onPause();
+        Log.i("Youssef", "inside MainActivity : onPause");
+    }
+    @Override
+    public void onStop() {
+        super.onStop();
+        Log.i("Youssef", "inside MainActivity : onStop");
+    }
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.i("Youssef", "inside MainActivity : onDestroy");
+    }
     @Override
     protected void onResume() {
         super.onResume();
@@ -473,14 +510,12 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);//this should be before adding menus maybe. findItem https://stackoverflow.com/questions/16500415/findviewbyid-for-menuitem-returns-null (and using menu.findItem may be better than findViewById ?, not sure)
-        //Log.i("Youssef", "inside onCreateOptionsMenu");
-        //menu.add(R.id.sidemenuitemgroup,25,1,"the second" );
-
+        Log.i("Youssef", "MainActivity - inside onCreateOptionsMenu");
         return true;
     }
 
-    //Related to the navigation menu. Used to retrieve the image from gallery and save it
-        public final int CHOOSE_MENUICON_REQUESTCODE = 2;
+        //Related to the navigation menu. Used to retrieve the image from gallery and save it
+        //public final int CHOOSE_MENUICON_REQUESTCODE = 2;
         @Override
         public void onActivityResult( int reqCode, int resultCode, Intent data ) {
             super.onActivityResult(reqCode, resultCode, data);
@@ -545,6 +580,11 @@ public class MainActivity extends AppCompatActivity {
             toolbar.getMenu().findItem(R.id.chooseIcon_menuitem).setVisible(true);
         }
          */
+        public void setLayoutColor( int linearlayout_id, String tag ) {
+            LinearLayout linearLayout = findViewById( linearlayout_id );
+            int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
+            linearLayout.setBackgroundColor( getResources().getColor( color_id ) );
+        }
         public void setIconOfCheckedNavMenuItem( String tag, int nav_menuitem_index ) {
             //since getCheckedItemOrder() when called from ChooseNavMenuIconFragment can't know the index (order), so we're using nav_menuitem_index
             //Log.i("seticon", "item index is " + getCheckedItemOrder());
@@ -628,41 +668,140 @@ public class MainActivity extends AppCompatActivity {
             builder.show();
         }
 
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        Log.i("Youssef", "MainActivity - inside onPrepareOptionsMenu");
+        return true;
+    }
+
+
     //Called when the user presses a menu item below the 3 vertical dots.
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle item selection
+        Log.i("Youssef", "MainActivity - inside onOptionsItemSelected");
         switch( item.getItemId() ) {
             case R.id.homenavigationitem_mainmenuitem:
                 navigateToMenuItem( menu.getItem(0).getItemId(), menu.getItem(0).getTitle().toString() );
                 return true;
             case R.id.refresh_mainmenuitem:
+                //for fetching data from server
 
                 return true;
-
-            case R.id.termsandconditions_menuitem:
-                adminTermsAndConditions_AlertDialog();
+            case R.id.statusbar_color:
+                Bundle bundle = new Bundle();
+                bundle.putInt( "index_of_navmenuitem" , getCheckedItemOrder() );
+                bundle.putString( "action", "status bar background color" );
+                navController.navigate( R.id.nav_color, bundle );
+                return true;
+            case R.id.statusbar_iconcolor:
+                boolean isChecked = !item.isChecked();
+                item.setChecked(isChecked);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    View decor = getWindow().getDecorView();
+                    if( isChecked ) { //make dark
+                        decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+                    } else {
+                        decor.setSystemUiVisibility(0);
+                    }
+                }
+                return true;
+            case R.id.topbar_backgroundcolor:
+                bundle = new Bundle();
+                bundle.putInt( "index_of_navmenuitem" , getCheckedItemOrder() );
+                bundle.putString( "action", "top bar background color" );
+                navController.navigate( R.id.nav_color, bundle );
+                return true;
+            case R.id.topbar_titlecolor:
+                bundle = new Bundle();
+                bundle.putInt( "index_of_navmenuitem" , getCheckedItemOrder() );
+                bundle.putString( "action", "top bar title color" );
+                navController.navigate( R.id.nav_color, bundle );
+                return true;
+            case R.id.topbar_3dotscolor:
+                bundle = new Bundle();
+                bundle.putInt( "index_of_navmenuitem" , getCheckedItemOrder() );
+                bundle.putString( "action", "top bar 3-dots color" );
+                navController.navigate( R.id.nav_color, bundle );
                 return true;
 
-            case R.id.bottombar_renametab:
+            case R.id.bottombar_add:
+                //navController.popBackStack(R.id.nav_home, false);
+
+                return true;
+            case R.id.bottombar_remove:
+
+                return true;
+            case R.id.bottombar_color:
+                bundle = new Bundle();
+                bundle.putInt( "index_of_navmenuitem" , getCheckedItemOrder() );
+                bundle.putString( "action", "bottom bar background color" );
+                navController.navigate( R.id.nav_color, bundle );
+                return true;
+            case R.id.bottombar_addtab:
 
                 Toast.makeText(MainActivity.this, "bottom bar rename successful ",
                         Toast.LENGTH_LONG).show();
                 return true;
-            case R.id.bottombar_add:
+            case R.id.bottombar_renametab:
 
                 return true;
-            case R.id.bottombar_actionmenu:
+            case R.id.bottombar_deletetab:
 
                 return true;
+            case R.id.bottombar_movetabright:
 
+                return true;
+            case R.id.bottombar_movetableft:
+
+                return true;
+            case R.id.termsandconditions_menuitem:
+                adminTermsAndConditions_AlertDialog();
+                return true;
             default:
                 //Log.i("Youssef", "menu item id is " + item.getItemId() );
                 return super.onOptionsItemSelected(item);
         }
     }
 
-        private void adminTermsAndConditions_AlertDialog() {
+        public void setStatusBarColor( String tag ) {
+            int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                getWindow().setStatusBarColor( ContextCompat.getColor(this, color_id ) );
+            }
+        }
+        public void setTopBarBackgroundColor( String tag ) {
+            int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
+            toolbar.setBackgroundColor( ContextCompat.getColor(this, color_id) );
+        }
+        public void setTopBarTitleColor( String tag ) {
+            int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
+            toolbar.setTitleTextColor( getResources().getColor( color_id ) ); //the action bar text
+        }
+        public void setTopBar3DotsColor( String tag ) {
+            int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
+            toolbar.getOverflowIcon().setColorFilter(
+                    ContextCompat.getColor(this, color_id ), PorterDuff.Mode.SRC_ATOP );
+        }
+        public void setBottomBar3DotsColor( String tag ) {
+            int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
+
+        }
+
+
+
+/* //Trying to change to color of the hamburger icon, but not working...
+        ActionBarDrawerToggle actionBarDrawerToggle = new ActionBarDrawerToggle(this, drawer,
+                toolbar, R.string.drawer_open, R.string.drawer_close);
+        actionBarDrawerToggle.getDrawerArrowDrawable().setColor( getResources().getColor( R.color.colorGreen ) );
+*/
+    //the 3 dots
+
+    //navigationView.setItemTextColor( R.color.colorGreen );
+
+
+
+    private void adminTermsAndConditions_AlertDialog() {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Terms And Conditions");
             // Set up the TextView
@@ -686,29 +825,31 @@ public class MainActivity extends AppCompatActivity {
                     "or pornography." +
                     "\n" +
                     "5) If you had to show any lady (others or yourself if you are a female), " +
-                    "please make sure she is wearing a vail and that her clothing is spacious and do not clearly defines " +
+                    "please make sure she is wearing a vail and that her clothing is spacious enough not to clearly define " +
                     "her body." +
                     "\n\n" +
                     "For any question or technical assistance, please contact the developer +961/70/853721");
-            builder.setView(output);
+            final ScrollView scrollView = new ScrollView(this);
+            scrollView.arrowScroll(View.SCROLL_AXIS_VERTICAL);
+            scrollView.addView( output );
+            builder.setView(scrollView);
             // Set up the buttons
             builder.setPositiveButton("Ok", null);
             builder.show();
         }
 
-
     //Called when the user presses on the stack navigation icon in order to navigate https://developer.android.com/reference/android/support/v7/app/AppCompatActivity#onSupportNavigateUp()
     @Override
     public boolean onSupportNavigateUp() {
         loadNavMenuImage();
-        //Log.i("Youssef", "inside onSupportNavigateUp");
+        Log.i("Youssef", "MainActivity - inside onSupportNavigateUp");
         return NavigationUI.navigateUp(navController, mAppBarConfiguration)
                 || super.onSupportNavigateUp();
 
     }
 
-        //Related to the navigation menu (header actually)
-        private void loadNavMenuImage() {
+    //Related to the navigation menu (header actually)
+    private void loadNavMenuImage() {
         imageButton_navheadermain = findViewById(R.id.imagebutton_navheadermain);
         if( imageButton_navheadermain == null ) { //won't be null I believe
             Log.i("Youssef", "imageButton_navheadermain is null");
@@ -731,6 +872,15 @@ public class MainActivity extends AppCompatActivity {
 
             }
         }
+    }
+
+    @Override
+    public void onBackPressed()
+    {
+        if( getCheckedItemOrder() != -1 ) { //root (top-level). IDK how universal this is
+            finish();
+        }
+        super.onBackPressed();  // optional depending on your needs
     }
 
 }
