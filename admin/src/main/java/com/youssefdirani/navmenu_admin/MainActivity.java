@@ -29,6 +29,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 
 import java.io.File;
@@ -114,11 +115,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private DrawerLayout drawer; //This is the "super large" layout element.
-    private Menu menu;
+    private Menu navMenu;
     private Toolbar toolbar;
     private NavController navController; //a real (host) fragment
     private MenuItem menuItem_addNewItem;
-
+    private BottomNavigationView bottomNavigationView;
+    private Menu bottomMenu;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
         drawer = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
         navController = Navigation.findNavController(this, R.id.nav_host_fragment);
-        menu = navigationView.getMenu();
+        navMenu = navigationView.getMenu();
 
         setupNavigation();
 
@@ -154,8 +156,8 @@ public class MainActivity extends AppCompatActivity {
                                 Toast.makeText(MainActivity.this, "Cannot delete the last window !", Toast.LENGTH_LONG ).show();
                                 return;
                             }
-                            menu.removeItem( menu.getItem( checkedItemOrder ).getItemId() );
-                            navigateToMenuItem( menu.getItem(0).getItemId(), menu.getItem(0).getTitle().toString() );
+                            navMenu.removeItem( navMenu.getItem( checkedItemOrder ).getItemId() );
+                            navigateToMenuItem( navMenu.getItem(0).getItemId(), navMenu.getItem(0).getTitle().toString() );
                             Toast.makeText(MainActivity.this, "Successful Deletion", Toast.LENGTH_SHORT ).show();
                             Log.i("Youssef", "After nav menu item deletion");
                         }
@@ -174,20 +176,23 @@ public class MainActivity extends AppCompatActivity {
                                         "Menu Item is already on top !", Toast.LENGTH_LONG ).show();
                                 return;
                             }
-                            final String title2 = menu.getItem( checkedItemOrder ).getTitle().toString();
-                            final Drawable drawable2 = menu.getItem( checkedItemOrder ).getIcon();
-                            final int id2 = menu.getItem( checkedItemOrder ).getItemId();
-                            final int order2 = menu.getItem( checkedItemOrder ).getOrder();
-                            final String title1 = menu.getItem( checkedItemOrder - 1 ).getTitle().toString();
-                            final Drawable drawable1 = menu.getItem( checkedItemOrder - 1 ).getIcon();
-                            final int id1 = menu.getItem( checkedItemOrder - 1 ).getItemId();
-                            final int order1 = menu.getItem( checkedItemOrder - 1 ).getOrder();
-                            menu.removeItem( id1 );
-                            menu.removeItem( id2 );
-                            addMenuItem( id1, order2, title1 ); //the important thing is the order.
-                            addMenuItem( id2, order1, title2 ); //this will be checked, and the other one will be unchecked.
-                            menu.findItem( id2 ).setIcon( drawable2 );
-                            menu.findItem( id1 ).setIcon( drawable1 );
+                            final String title2 = navMenu.getItem( checkedItemOrder ).getTitle().toString();
+                            final Drawable drawable2 = navMenu.getItem( checkedItemOrder ).getIcon();
+                            final int id2 = navMenu.getItem( checkedItemOrder ).getItemId();
+                            final int order2 = navMenu.getItem( checkedItemOrder ).getOrder();
+                            final String title1 = navMenu.getItem( checkedItemOrder - 1 ).getTitle().toString();
+                            final Drawable drawable1 = navMenu.getItem( checkedItemOrder - 1 ).getIcon();
+                            final int id1 = navMenu.getItem( checkedItemOrder - 1 ).getItemId();
+                            final int order1 = navMenu.getItem( checkedItemOrder - 1 ).getOrder();
+                            navMenu.removeItem( id1 );
+                            navMenu.removeItem( id2 );
+                            addNavMenuItem( id1, order2, title1 ); //the important thing is the order.
+                            addNavMenuItem( id2, order1, title2 ); //this will be checked, and the other one will be unchecked.
+                            navMenu.findItem( id2 ).setIcon( drawable2 );
+                            navMenu.findItem( id1 ).setIcon( drawable1 );
+                            if( checkedItemOrder - 1 == 0 ) {
+                                setFirstOptionsMenuIcon();
+                            }
                             //I won't be navigating. Since we already see a fragment, and no need to reenter in it again
                             Toast.makeText(MainActivity.this, "Successful reordering", Toast.LENGTH_SHORT ).show();
                         }
@@ -207,21 +212,24 @@ public class MainActivity extends AppCompatActivity {
                                         "Menu Item is already below all !", Toast.LENGTH_LONG ).show();
                                 return;
                             }
-                            final String title2 = menu.getItem( checkedItemOrder ).getTitle().toString();
-                            final Drawable drawable2 = menu.getItem( checkedItemOrder ).getIcon();
-                            final int id2 = menu.getItem( checkedItemOrder ).getItemId();
-                            final int order2 = menu.getItem( checkedItemOrder ).getOrder();
-                            final String title1 = menu.getItem( checkedItemOrder + 1 ).getTitle().toString();
-                            final Drawable drawable1 = menu.getItem( checkedItemOrder + 1 ).getIcon();
-                            final int id1 = menu.getItem( checkedItemOrder + 1 ).getItemId();
-                            final int order1 = menu.getItem( checkedItemOrder + 1 ).getOrder();
-                            menu.removeItem( id1 );
-                            menu.removeItem( id2 );
-                            addMenuItem( id1, order2, title1 ); //the important thing is the order.
-                            addMenuItem( id2, order1, title2 ); //this will be checked, and the other one will be unchecked.
-                            menu.findItem( id2 ).setIcon( drawable2 );
-                            menu.findItem( id1 ).setIcon( drawable1 );
+                            final String title2 = navMenu.getItem( checkedItemOrder ).getTitle().toString();
+                            final Drawable drawable2 = navMenu.getItem( checkedItemOrder ).getIcon();
+                            final int id2 = navMenu.getItem( checkedItemOrder ).getItemId();
+                            final int order2 = navMenu.getItem( checkedItemOrder ).getOrder();
+                            final String title1 = navMenu.getItem( checkedItemOrder + 1 ).getTitle().toString();
+                            final Drawable drawable1 = navMenu.getItem( checkedItemOrder + 1 ).getIcon();
+                            final int id1 = navMenu.getItem( checkedItemOrder + 1 ).getItemId();
+                            final int order1 = navMenu.getItem( checkedItemOrder + 1 ).getOrder();
+                            navMenu.removeItem( id1 );
+                            navMenu.removeItem( id2 );
+                            addNavMenuItem( id1, order2, title1 ); //the important thing is the order.
+                            addNavMenuItem( id2, order1, title2 ); //this will be checked, and the other one will be unchecked.
+                            navMenu.findItem( id2 ).setIcon( drawable2 );
+                            navMenu.findItem( id1 ).setIcon( drawable1 );
                             //I won't be navigating. Since we already see a fragment, and no need to reenter in it again
+                            if( checkedItemOrder == 0 ) {
+                                setFirstOptionsMenuIcon();
+                            }
                             Toast.makeText(MainActivity.this, "Successful reordering", Toast.LENGTH_SHORT ).show();
                         }
                         drawer.openDrawer(GravityCompat.START);
@@ -246,7 +254,49 @@ public class MainActivity extends AppCompatActivity {
         //Fragment fragment = fragmentManager.findFragmentByTag("home fragment tag"); //is null unfortunately
         //fragmentManager.getFragmentFactory()
  */
+        bottomNavigationView = findViewById( R.id.bottomnavview);
+        bottomMenu = bottomNavigationView.getMenu();
+        setupBottomNavigation();
 
+    }
+
+    public void hideOptionsMenuAndBottomMenu() {
+        toolbar.getMenu().setGroupVisible( R.id.optionsmenu_actionitemgroup,false );
+        bottomNavigationView.setVisibility( BottomNavigationView.INVISIBLE );
+    }
+    public void showOptionsMenuAndBottomMenu() {
+        toolbar.getMenu().setGroupVisible( R.id.optionsmenu_actionitemgroup,true );
+        bottomNavigationView.setVisibility( BottomNavigationView.VISIBLE );
+    }
+
+    private void setupBottomNavigation() {
+        bottomNavigationView.setOnNavigationItemSelectedListener( new BottomNavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) { //MenuItem.OnMenuItemClickListener is any better
+                Log.i("Youssef", "bottom tab " + getCheckedItemOrder_ofBottomBar() + " is clicked.");
+                switch( menuItem.getItemId() ) {
+                    case R.id.navigation_bottom_1:
+                        //Log.i("Youssef", "bottom tab " + getCheckedItemOrder_ofBottomBar() + " is clicked.");
+
+                        return true;
+                    case R.id.navigation_bottom_2:
+                        //Log.i("Youssef", "second bottom tab is clicked.");
+
+                        return true;
+                    case R.id.navigation_bottom_3:
+                        //Log.i("Youssef", "third bottom tab is clicked.");
+
+                        return true;
+                    case R.id.navigation_bottom_4:
+                        //Log.i("Youssef", "fourth bottom tab is clicked.");
+
+                        return true;
+                    default:
+
+                        return false;
+                }
+            }
+        });
     }
 
     private final String Delete_Item = "delete item";
@@ -262,7 +312,7 @@ public class MainActivity extends AppCompatActivity {
             int[] itemsId = new int[ size ];
             for( int i = 0; i < size; i++ ) {
                 //Log.i("setupNavigation", "nav menu item title is " + menu.getItem(i).getTitle());
-                itemsId[i] = menu.getItem(i).getItemId();
+                itemsId[i] = navMenu.getItem(i).getItemId();
             }
             mAppBarConfiguration = new AppBarConfiguration.Builder( itemsId )
                     .setDrawerLayout(drawer)
@@ -291,12 +341,13 @@ public class MainActivity extends AppCompatActivity {
                                         Toast.LENGTH_LONG).show();
                                 return false;
                             }
-                            createMenuItem_AlertDialog();
+                            createMenuItem_AlertDialog( true );
                             drawer.closeDrawer(GravityCompat.START);
                             return true;
                         case R.id.nav_menuicon:
                             bundle = new Bundle();
                             bundle.putInt( "index_of_navmenuitem" , getCheckedItemOrder() ); //for technical reasons, I have to pass in the checked menu item now. That is because after getting out of ChooseNavMenuIconFragment class, we cannot determine the checked menu item (weird but this is what happens)
+                            bundle.putString( "action", "navigation menu icon" );
                             navController.navigate( R.id.nav_menuicon, bundle );
                             drawer.closeDrawer(GravityCompat.START);
                             return true;
@@ -308,7 +359,7 @@ public class MainActivity extends AppCompatActivity {
                             //Log.i("Youssef", "checkedItemOrder is " + checkedItemOrder);
                             //Log.i("Youssef", "menu size is " + menu.size() );
                             if( checkedItemOrder != -1 ) {
-                                rename_AlertDialog( menu.getItem( checkedItemOrder ) );
+                                rename_AlertDialog( navMenu.getItem( checkedItemOrder ), true );
                             }
                             //surprisingly enough, navigationView.getCheckedItem().getOrder() always returns 0 thus not working right.
                             //invalidateOptionsMenu(); //https://stackoverflow.com/questions/28042070/how-to-change-the-actionbar-menu-items-icon-dynamically/35911398
@@ -341,8 +392,8 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 private void shiftMenuItemsUp(int checkedItemOrder) { //shifting titles from bottom item to the checked item. Checked item won't shift because it will be deleted
-                    for( int index = checkedItemOrder + 1 ; index <= menu.size() - 2 ; index++ ) {
-                        menu.getItem( index - 1 ).setTitle( menu.getItem( index ).getTitle() );
+                    for( int index = checkedItemOrder + 1 ; index <= navMenu.size() - 2 ; index++ ) {
+                        navMenu.getItem( index - 1 ).setTitle( navMenu.getItem( index ).getTitle() );
                     }
                     /*
                     for( int index = checkedItemOrder + 1 ; index <= menu.size() - 2 ; index++  ) {
@@ -353,7 +404,7 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        private void createMenuItem_AlertDialog() {
+        private void createMenuItem_AlertDialog( final boolean isNavNotBottomNav ) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Please enter the name of the new window");
 
@@ -368,17 +419,21 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     final String userInputText = input.getText().toString();
-                    if(isUserInputTextNotFine(userInputText)) {
+                    if( isUserInputTextNotFine( userInputText, isNavNotBottomNav ) ) {
                         return;
                     }
 
                     //Now creating the new menuItem
                     //int idOfNewMenuItem = FragmentId[ menu.size() - 2 ]; //2 because we have the Home and the add-new-item menu items
-                    final int id = getAFreeId();
-                    addMenuItem( id, menu.getItem( getMenuItemsCount() - 1 ).getOrder() + 1, userInputText );
-                    navigateToMenuItem( id, userInputText ); //inside this we have we setChecked to true
-                    Toast.makeText(MainActivity.this, "Navigation menu item is successfully added.",
-                            Toast.LENGTH_LONG).show();
+                    if( isNavNotBottomNav ) {
+                        final int id = getAFreeId();
+                        addNavMenuItem( id, navMenu.getItem(getMenuItemsCount() - 1).getOrder() + 1, userInputText );
+                        navigateToMenuItem( id, userInputText ); //inside this we have we setChecked to true
+                        Toast.makeText(MainActivity.this, "Navigation menu item is successfully added.",
+                                Toast.LENGTH_LONG).show();
+                    } else { //adding a bottom bar menu item. Actually it's making an item visible again
+
+                    }
                 }
 
                 private int getAFreeId() { //that has not been used in any of the menu items
@@ -388,7 +443,7 @@ public class MainActivity extends AppCompatActivity {
                         int i;
                         for (i = 0; i < size; i++) {
                             //Log.i("getAFreeId", "menu.getItem(i).getItemId() " + menu.getItem(i).getItemId());
-                            if( menu.getItem(i).getItemId() == fragmentId ) {
+                            if( navMenu.getItem(i).getItemId() == fragmentId ) {
                                 break;
                             }
                         }
@@ -399,13 +454,7 @@ public class MainActivity extends AppCompatActivity {
                     return 0; //should not be reached
                 }
 
-                private void removeAndReputAddItemMenuItem() { //this is to put this item at last
-                    String addNewItem_title = menuItem_addNewItem.getTitle().toString();
-                    Log.i("Youssef", "R.id.nav_addnewitem was " + R.id.nav_addnewitem);
-                    menu.removeItem(R.id.nav_addnewitem);
-                    Log.i("Youssef", "R.id.nav_addnewitem is still " + R.id.nav_addnewitem);
-                    menuItem_addNewItem = menu.add( R.id.main_drawer_group, R.id.nav_addnewitem, 0, addNewItem_title );
-                }
+
             });
 
             builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -418,12 +467,12 @@ public class MainActivity extends AppCompatActivity {
             builder.show();
         }
 
-        private void addMenuItem( int id, int order, String title ) {
-            final MenuItem createdMenuItem = menu.add( R.id.main_drawer_group, id,
+        private void addNavMenuItem( int id, int order, String title ) {
+            final MenuItem createdMenuItem = navMenu.add( R.id.main_drawer_group, id,
                      order, title ); //the order is in coherence with orderInCategory inside activity_main_drawer.xml. It may get larger than getMenuItemsCount(), this is because we delete items without fixing the order then when we may add again a new menu item.
             final int checkedItemOrder = getCheckedItemOrder();
             if( checkedItemOrder >= 0 ) {
-                menu.getItem( checkedItemOrder ).setChecked(false);
+                navMenu.getItem( checkedItemOrder ).setChecked(false);
             }
             Log.i("Youssef", "order of newly created item is " + createdMenuItem.getOrder() );
             createdMenuItem.setChecked(true);
@@ -431,7 +480,8 @@ public class MainActivity extends AppCompatActivity {
             toolbar.setTitle( title );
         }
 
-           private boolean isUserInputTextNotFine(@org.jetbrains.annotations.NotNull String userInputText ) {
+           private boolean isUserInputTextNotFine(@org.jetbrains.annotations.NotNull String userInputText,
+                                                  boolean isNavNotBottomNav ) {
                 final int Max_Menu_Item_Chars = 25;
                 if( userInputText.equals("") ) {
                     return true; //we won't make a change
@@ -441,7 +491,7 @@ public class MainActivity extends AppCompatActivity {
                             Toast.LENGTH_LONG).show();
                     return true; //we won't make a change
                 }
-                if( isNavigationItemNameAlreadyExisting( userInputText ) ) {
+                if( isNavigationItemNameAlreadyExisting( userInputText, isNavNotBottomNav ) ) {
                     Toast.makeText(MainActivity.this, "The name you entered already exists.",
                             Toast.LENGTH_LONG).show();
                     return true; //we won't make a change
@@ -454,7 +504,7 @@ public class MainActivity extends AppCompatActivity {
                     bundle.putInt( "id", idOfNewMenuItem );
                     bundle.putString( "title", userInputText );
                     navController.navigate( idOfNewMenuItem, bundle );
-                    menu.findItem( idOfNewMenuItem ).setChecked(true);
+                    navMenu.findItem( idOfNewMenuItem ).setChecked(true);
                     drawer.closeDrawer(GravityCompat.START); //after this, onResume in the fragment is called. Tested. Still, it's better to make sure using a timer or something.
                     toolbar.setTitle( userInputText );
                 }
@@ -482,23 +532,18 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.i("Youssef", "inside MainActivity : onResume");
-        //color change
-        /*
-        https://stackoverflow.com/questions/18033260/set-background-color-android
-        https://stackoverflow.com/questions/40771900/how-to-pass-color-resource-as-parameter-android
-        toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.material_on_primary_emphasis_high_type));
-        toolbar.setTitleTextColor(ContextCompat.getColor(this, R.color.colorPrimary));
-        navigationView.setItemTextColor(...);
-        */
-        //this can be useful
-        //navigateToMenuItem( menu.getItem(0).getItemId(), menu.getItem(0).getTitle().toString() );
-        /*
-        menu.getItem(0).setChecked(true);
-        int checkedItemOrder = getCheckedItemOrder();
-        if( checkedItemOrder != -1 ) {
-            toolbar.setTitle( menu.getItem( checkedItemOrder ).getTitle() );
+    }
+
+    public void setFirstOptionsMenuIcon() { //it's because of the visibility thing, I  had to call it from ChooseMenuIconFragment as well
+        Drawable first_icon = navMenu.getItem(0).getIcon();
+        if( first_icon != null ) {
+            Log.i("Youssef", "inside setFirstOptionsMenuIcon : icon is not null");
+            toolbar.getMenu().getItem(0).setVisible( true );
+            toolbar.getMenu().getItem(0).setIcon( first_icon );
+        } else {
+            Log.i("Youssef", "inside setFirstOptionsMenuIcon : icon is null");
+            toolbar.getMenu().getItem(0).setVisible( false ); //probably better than toolbar.getMenu().getItem(0).setIcon( 0 );
         }
-         */
     }
 
     private final int REQUEST_CODE_LOAD_IMG = 1;
@@ -511,6 +556,7 @@ public class MainActivity extends AppCompatActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);//this should be before adding menus maybe. findItem https://stackoverflow.com/questions/16500415/findviewbyid-for-menuitem-returns-null (and using menu.findItem may be better than findViewById ?, not sure)
         Log.i("Youssef", "MainActivity - inside onCreateOptionsMenu");
+        setFirstOptionsMenuIcon();
         return true;
     }
 
@@ -571,37 +617,67 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        //these 3 methods better be implementation of an interface defined in class ChooseMenuIconFragment
-        /*
-        public void disappearChooseNavigationIcon_MenuItem() {
-            toolbar.getMenu().findItem(R.id.chooseIcon_menuitem).setVisible(false);
-        }
-        public void appearChooseNavigationIcon_MenuItem() {
-            toolbar.getMenu().findItem(R.id.chooseIcon_menuitem).setVisible(true);
-        }
-         */
         public void setLayoutColor( int linearlayout_id, String tag ) {
             LinearLayout linearLayout = findViewById( linearlayout_id );
             int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
             linearLayout.setBackgroundColor( getResources().getColor( color_id ) );
         }
-        public void setIconOfCheckedNavMenuItem( String tag, int nav_menuitem_index ) {
+        public void setIconOfCheckedNavMenuItem( String tag, int nav_menuitem_index, String menu ) {
             //since getCheckedItemOrder() when called from ChooseNavMenuIconFragment can't know the index (order), so we're using nav_menuitem_index
             //Log.i("seticon", "item index is " + getCheckedItemOrder());
+            if( tag.equalsIgnoreCase("ic_no_icon") ) {
+                if( menu.equals("nav menu") ) {
+                    MenuItem menuItem = navMenu.getItem( nav_menuitem_index );
+                    menuItem.setIcon(0);
+                    /* //that was before I try setIcon(0)
+                    int order = menuItem.getOrder();
+                    int id = menuItem.getItemId();
+                    String title = menuItem.getTitle().toString();
+                    navMenu.removeItem( id );
+                    addNavMenuItem( id, order, title );
+                    */
+                } else if( menu.equals("bottom nav menu") ) {
+                    //it's good that the bottom bar still remembers the checked item order after returning back from ChooseNavMenuIconFragment. Here we won't be using nav_menuitem_index, it's been useful for the toolbar
+                    int bottomNavIndex = getCheckedItemOrder_ofBottomBar();
+                    MenuItem menuItem = bottomMenu.getItem( bottomNavIndex );
+                    menuItem.setIcon(0);
+                    /*//it was before I try setIcon(0)
+                    int order = menuItem.getOrder();
+                    int id = menuItem.getItemId();
+                    String title = menuItem.getTitle().toString();
+                    bottomMenu.removeItem( id );
+                    bottomMenu.add( R.id.bottombar_actionmenu, id, order, title );
+                    bottomMenu.findItem( id ).setChecked(true);
+                    */
+                }
+                return;
+            }
             int icon_drawable_id = getResources().getIdentifier( tag, "drawable", getPackageName() );
             Drawable icon = getResources().getDrawable( icon_drawable_id );
-            menu.getItem( nav_menuitem_index ).setIcon( icon );
+            if( menu.equals("nav menu") ) {
+                navMenu.getItem( nav_menuitem_index ).setIcon( icon );
+            } else if( menu.equals("bottom nav menu") ) {
+                bottomMenu.getItem( getCheckedItemOrder_ofBottomBar() ).setIcon( icon ); //it's good that the bottom bar still remembers the checked item order after returning back from ChooseNavMenuIconFragment
+            }
         }
         public void updateToolbarTitle( int indexOfNewMenuItem ) {
-            toolbar.setTitle( menu.getItem( indexOfNewMenuItem ).getTitle() );
+            toolbar.setTitle( navMenu.getItem( indexOfNewMenuItem ).getTitle() );
         }
 
         //Related to the navigation menu. Used to know the checked navigation menu item. It's really needed, especially for onNavigationItemSelected
-        private int getCheckedItemOrder() {
+        private int getCheckedItemOrder() { //this is different than OnNavigationItemSelectedListener in that in the latter, it's not yet checked, but in the process of being so. While with getCheckedItemOrder it's already checked.
             final int size = getMenuItemsCount();
             for( int i = 0; i < size; i++ ) {
-                MenuItem item = menu.getItem(i);
+                MenuItem item = navMenu.getItem(i);
                 if( item.isChecked() ) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+        private int getCheckedItemOrder_ofBottomBar() {
+            for( int i = 0; i < bottomMenu.size(); i++ ) {
+                if( bottomMenu.getItem(i).isChecked() ) {
                     return i;
                 }
             }
@@ -610,9 +686,9 @@ public class MainActivity extends AppCompatActivity {
 
         private int getMenuItemsCount() { //will always be menu.size() - 1, according to the structure of activity_main_drawer.xml file
             int count = 0;
-            Log.i("Youssef", "menu size is " + menu.size() );
-            for( int i = 0; i < menu.size(); i++ ) { //going till i < menu.size() - 1 is also fine, but anyway.
-                MenuItem item = menu.getItem(i);
+            Log.i("Youssef", "menu size is " + navMenu.size() );
+            for( int i = 0; i < navMenu.size(); i++ ) { //going till i < menu.size() - 1 is also fine, but anyway.
+                MenuItem item = navMenu.getItem(i);
                 if( item.getGroupId() == R.id.main_drawer_group ) {
                     Log.i("Youssef", "order of item is " + item.getOrder());
                     Log.i("Youssef", "id of item is " + item.getItemId());
@@ -622,11 +698,16 @@ public class MainActivity extends AppCompatActivity {
             return count;
         }
 
-        private boolean isNavigationItemNameAlreadyExisting( String newName ) {
+        private boolean isNavigationItemNameAlreadyExisting( String newName, boolean isNavNotBottomNav ) {
             final int size = getMenuItemsCount();
             for (int i = 0; i < size; i++) {
-                MenuItem item = menu.getItem(i);
-                if( newName.equals( item.getTitle().toString() ) ) {
+                MenuItem item;
+                if( isNavNotBottomNav ) {
+                    item = navMenu.getItem(i);
+                } else {
+                    item = bottomMenu.getItem(i);
+                }
+                if( newName.equalsIgnoreCase( item.getTitle().toString() ) ) {
                     return true;
                 }
             }
@@ -634,7 +715,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //Related to the navigation menu. Used to rename the checked navigation menu item
-        private void rename_AlertDialog( MenuItem selectedMenuItem ) {
+        private void rename_AlertDialog(MenuItem selectedMenuItem, final boolean isNavNotBottomNav ) {
             final MenuItem menuItem = selectedMenuItem;
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Renaming");
@@ -650,11 +731,13 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     String userInputText = input.getText().toString();
-                    if(isUserInputTextNotFine(userInputText)) {
+                    if( isUserInputTextNotFine( userInputText, isNavNotBottomNav ) ) {
                         return;
                     }
                     menuItem.setTitle( userInputText );
-                    toolbar.setTitle( userInputText ); //necessary. Another way (probably) is to change the label of the corresponding fragment.
+                    if( isNavNotBottomNav ) {
+                        toolbar.setTitle(userInputText); //necessary. Another way (probably) is to change the label of the corresponding fragment.
+                    }
                 }
             });
 
@@ -682,7 +765,7 @@ public class MainActivity extends AppCompatActivity {
         Log.i("Youssef", "MainActivity - inside onOptionsItemSelected");
         switch( item.getItemId() ) {
             case R.id.homenavigationitem_mainmenuitem:
-                navigateToMenuItem( menu.getItem(0).getItemId(), menu.getItem(0).getTitle().toString() );
+                navigateToMenuItem( navMenu.getItem(0).getItemId(), navMenu.getItem(0).getTitle().toString() );
                 return true;
             case R.id.refresh_mainmenuitem:
                 //for fetching data from server
@@ -724,13 +807,23 @@ public class MainActivity extends AppCompatActivity {
                 bundle.putString( "action", "top bar 3-dots color" );
                 navController.navigate( R.id.nav_color, bundle );
                 return true;
-
+            case R.id.bottombar_actionmenu:
+                if( bottomNavigationView.getVisibility() == BottomNavigationView.VISIBLE ) {
+                    Log.i("Youssef", "after pressing the bottombar action menu. Bottom bar is visible");
+                    item.getSubMenu().setGroupVisible( R.id.bottombar_exists,true ); //it works but toolbar.getMenu().setGroupEnabled( ... ); doesn't work maybe because the group is not a direct child
+                    toolbar.getMenu().findItem(R.id.bottombar_add).setVisible( false );
+                } else {
+                    Log.i("Youssef", "after pressing the bottombar action menu. Bottom bar is invisible");
+                    toolbar.getMenu().findItem(R.id.bottombar_add).setVisible( true );
+                    item.getSubMenu().setGroupVisible( R.id.bottombar_exists,false );
+                }
+                return true;
             case R.id.bottombar_add:
-                //navController.popBackStack(R.id.nav_home, false);
-
+                bottomNavigationView.setVisibility( BottomNavigationView.VISIBLE );
+                bottomMenu.getItem(0).setChecked(true); //this is my convention
                 return true;
             case R.id.bottombar_remove:
-
+                bottomNavigationView.setVisibility( BottomNavigationView.INVISIBLE );
                 return true;
             case R.id.bottombar_color:
                 bundle = new Bundle();
@@ -739,15 +832,31 @@ public class MainActivity extends AppCompatActivity {
                 navController.navigate( R.id.nav_color, bundle );
                 return true;
             case R.id.bottombar_addtab:
-
-                Toast.makeText(MainActivity.this, "bottom bar rename successful ",
-                        Toast.LENGTH_LONG).show();
+                if( bottomMenu.size() >= 4 )  {
+                    Toast.makeText(MainActivity.this, "This is the maximum tabs you may have " +
+                            "for this version.\n" +
+                            "Please contact the developer for another version of the app.", Toast.LENGTH_LONG ).show();
+                    return false;
+                }
+                createMenuItem_AlertDialog( false );
+                return true;
+            case R.id.bottombar_menuicon:
+                bundle = new Bundle();
+                bundle.putInt( "index_of_navmenuitem" , getCheckedItemOrder() ); //just for the toolbar name. weird. We know we won't affect the navigation menu item icon.
+                bundle.putString( "action", "bottom bar menu item" );
+                navController.navigate( R.id.nav_menuicon, bundle );
                 return true;
             case R.id.bottombar_renametab:
-
+                int checkedItemOrder = getCheckedItemOrder_ofBottomBar();
+                if( checkedItemOrder != -1 ) {
+                    rename_AlertDialog( bottomMenu.getItem( checkedItemOrder ), false );
+                }
                 return true;
             case R.id.bottombar_deletetab:
-
+                checkedItemOrder = getCheckedItemOrder_ofBottomBar();
+                if( checkedItemOrder != -1 ) {
+                    bottomMenu.getItem( checkedItemOrder ).setVisible(false);
+                }
                 return true;
             case R.id.bottombar_movetabright:
 
@@ -783,11 +892,10 @@ public class MainActivity extends AppCompatActivity {
             toolbar.getOverflowIcon().setColorFilter(
                     ContextCompat.getColor(this, color_id ), PorterDuff.Mode.SRC_ATOP );
         }
-        public void setBottomBar3DotsColor( String tag ) {
+        public void setBottomBarBackgroundColor( String tag ) {
             int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
-
+            bottomNavigationView.setBackgroundColor( ContextCompat.getColor(this, color_id) );
         }
-
 
 
 /* //Trying to change to color of the hamburger icon, but not working...

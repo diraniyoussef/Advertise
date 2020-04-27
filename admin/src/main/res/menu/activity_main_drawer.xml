@@ -32,7 +32,7 @@
                 android:title="@string/newitem_submenu" />
             <item
                 android:id="@+id/nav_menuicon"
-                android:icon="@android:mipmap/sym_def_app_icon"
+                android:icon="@drawable/ic_tag_faces_black_24dp"
                 android:title="@string/chooseicon_submenu" />
             <item
                 android:id="@+id/nav_renameitem"

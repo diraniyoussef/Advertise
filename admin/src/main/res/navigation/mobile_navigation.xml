@@ -33,7 +33,7 @@
 
     <fragment
         android:id="@+id/nav_menuicon"
-        android:name="com.youssefdirani.navmenu_admin.ui.ChooseNavMenuIconFragment"
+        android:name="com.youssefdirani.navmenu_admin.ui.ChooseMenuIconFragment"
         android:label="@string/chooseicon_title" />
     <!--tools:layout="@layout/fragment_2"-->
     <fragment

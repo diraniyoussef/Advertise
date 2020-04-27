@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
     <group
-        android:id="@+id/sidemenuitemgroup">
+        android:id="@+id/optionsmenu_actionitemgroup">
+
         <item
             android:id="@+id/homenavigationitem_mainmenuitem"
             android:icon="@drawable/ic_home_black_24dp"
@@ -65,22 +66,25 @@
                 <item
                     android:id="@+id/bottombar_add"
                     android:icon="@android:drawable/ic_menu_add"
-                    android:title="Add" />
+                    android:title="Add Bar" />
                 <group
-                    android:id="@+id/bottombar_exists"
-                    android:visible="false">
+                    android:id="@+id/bottombar_exists">
                     <item
                         android:id="@+id/bottombar_remove"
                         android:icon="@android:drawable/ic_menu_delete"
-                        android:title="Delete" />
+                        android:title="Delete Bar" />
                     <item
                         android:id="@+id/bottombar_color"
                         android:icon="@drawable/ic_format_paint_black_24dp"
-                        android:title="Assign Color" />
+                        android:title="Background Color" />
                     <item
                         android:id="@+id/bottombar_addtab"
                         android:icon="@android:drawable/ic_menu_add"
                         android:title="Add Tab" />
+                    <item
+                        android:id="@+id/bottombar_menuicon"
+                        android:icon="@drawable/ic_tag_faces_black_24dp"
+                        android:title="@string/chooseicon_submenu" />
                     <item
                         android:id="@+id/bottombar_renametab"
                         android:icon="@android:drawable/ic_menu_edit"
@@ -100,11 +104,11 @@
                 </group>
             </menu>
         </item>
-
+    </group>
         <item
             android:id="@+id/termsandconditions_menuitem"
             android:title="@string/termsandconditions_admin"
             app:showAsAction="never" />
 
-    </group>
+
 </menu>

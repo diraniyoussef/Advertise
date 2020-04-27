@@ -15,19 +15,22 @@ import androidx.fragment.app.Fragment;
 
 public class ChooseColorFragment extends Fragment {
     private MainActivity activity;
+    private int indexOfNavMenuItem = -1;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         Log.i("Youssef", "ChooseColorFragment - no arguments");
+
         View root = inflater.inflate( R.layout.fragment_colors, container, false );
 
-        Bundle args = getArguments();
+        final Bundle args = getArguments();
         if( args == null ) {
             Log.i("Youssef", "inside ChooseColorFragment : no arguments");
         } else {
+            indexOfNavMenuItem = getArguments().getInt("index_of_navmenuitem");
             activity = (MainActivity) getActivity();
-
+            activity.hideOptionsMenuAndBottomMenu();
             View.OnClickListener onClickListener = new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -53,14 +56,12 @@ public class ChooseColorFragment extends Fragment {
                             activity.setTopBar3DotsColor( tag );
                             break;
                         case "bottom bar background color":
-                            activity.setBottomBar3DotsColor( tag );
+                            activity.setBottomBarBackgroundColor( tag );
                             break;
                         default:
                     }
 
                     activity.onBackPressed(); //better than activity.getSupportFragmentManager().popBackStack(); //https://stackoverflow.com/questions/2717954/android-simulate-back-button
-                    final int indexOfNewMenuItem = getArguments().getInt("index_of_navmenuitem");
-                    activity.updateToolbarTitle( indexOfNewMenuItem ); //unfortunately needed.
                 }
             };
             root.findViewById(R.id.imagebutton_cardview_dark_background).setOnClickListener(onClickListener);
@@ -99,5 +100,9 @@ public class ChooseColorFragment extends Fragment {
         //MUST RETURN SOMETHING USING onActivityResult(...); that is for technical reasons.
         //activity.onActivityResult( activity.CHOOSE_MENUICON_REQUESTCODE, RESULT_CANCELED,null );
         //activity.appearChooseNavigationIcon_MenuItem();
+        if( indexOfNavMenuItem != -1 ) {
+            activity.updateToolbarTitle(indexOfNavMenuItem); //unfortunately needed.
+        }
+        activity.showOptionsMenuAndBottomMenu();
     }
 }

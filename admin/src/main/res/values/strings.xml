@@ -12,7 +12,7 @@
     <string name="fragment0_title">Gallery</string>
     <string name="fragment1_title">Slideshow</string>
     <string name="fragment2_title">The Active</string>
-    <string name="chooseicon_title">Choose Icon for Navigation Menu</string>
+    <string name="chooseicon_title">Choose Icon</string>
     <string name="choosecolor_title">Choose Color</string>
 
     <string name="newitem_submenu">Add New Item</string>

@@ -4,11 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true">
-        <GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        <GridLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -41,6 +41,8 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="10dp"
                 android:tag="ic_home_black_24dp"
+                android:backgroundTint="@color/colorBlack"
+                android:foregroundGravity="center|clip_horizontal"
                 app:srcCompat="@drawable/ic_home_black_24dp" />
             <ImageButton
                 android:id="@+id/imagebutton_ic_menu_camera"
@@ -118,6 +120,7 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="10dp"
                 android:tag="ic_refresh_black_24dp"
+                android:backgroundTint="@color/colorBlack"
                 app:srcCompat="@drawable/ic_refresh_black_24dp" />
             <ImageButton
                 android:id="@+id/imagebutton_ic_settings_applications_black_24dp"
@@ -161,6 +164,13 @@
                 android:layout_margin="10dp"
                 android:tag="ic_vignette_black_24dp"
                 app:srcCompat="@drawable/ic_vignette_black_24dp" />
+            <ImageButton
+                android:id="@+id/imagebutton_ic_no_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:tag="ic_no_icon"
+                app:srcCompat="@drawable/ic_no_icon" />
         </GridLayout>
     </ScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>
