@@ -151,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
                         // item and the drawer is still open then it is unreliable
                         int checkedItemOrder = getCheckedItemOrder();
                         if( checkedItemOrder != -1 ) {
-                            int size = getMenuItemsCount();
+                            int size = getNavMenuItemsCount();
                             if( size < 2 ) { //actually it's == 1
                                 Toast.makeText(MainActivity.this, "Cannot delete the last window !", Toast.LENGTH_LONG ).show();
                                 return;
@@ -164,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     case Move_Item_Up:
                         navItemAction = "";
-                        int size = getMenuItemsCount();
+                        int size = getNavMenuItemsCount();
                         checkedItemOrder = getCheckedItemOrder();
                         if( checkedItemOrder != -1 ) {
                             if( size < 2 ) {
@@ -200,7 +200,7 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     case Move_Item_Down:
                         navItemAction = "";
-                        size = getMenuItemsCount();
+                        size = getNavMenuItemsCount();
                         checkedItemOrder = getCheckedItemOrder();
                         if( checkedItemOrder != -1 ) {
                             if( size < 2 ) {
@@ -308,7 +308,7 @@ public class MainActivity extends AppCompatActivity {
             R.id.nav_fragment4, R.id.nav_fragment5 };
 
         private void setupNavigation() {
-            final int size = getMenuItemsCount();
+            final int size = getNavMenuItemsCount();
             int[] itemsId = new int[ size ];
             for( int i = 0; i < size; i++ ) {
                 //Log.i("setupNavigation", "nav menu item title is " + menu.getItem(i).getTitle());
@@ -334,7 +334,7 @@ public class MainActivity extends AppCompatActivity {
                             return true;
                         case R.id.nav_addnewitem:
                             Log.i("Youssef", "add New Menu Item is clicked.");
-                            if( FragmentId.length <= getMenuItemsCount() ) { //the idea is == actually
+                            if( FragmentId.length <= getNavMenuItemsCount() ) { //the idea is == actually
                                 Toast.makeText(MainActivity.this, "This is the maximum menu items you may have " +
                                                 "for this version.\n" +
                                                 "Please contact the developer for another version of the app.",
@@ -404,6 +404,9 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        final int[] BottomNavFragmentId = { R.id.navigation_bottom_1, R.id.navigation_bottom_2,
+            R.id.navigation_bottom_3, R.id.navigation_bottom_4 };
+
         private void createMenuItem_AlertDialog( final boolean isNavNotBottomNav ) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Please enter the name of the new window");
@@ -425,19 +428,30 @@ public class MainActivity extends AppCompatActivity {
 
                     //Now creating the new menuItem
                     //int idOfNewMenuItem = FragmentId[ menu.size() - 2 ]; //2 because we have the Home and the add-new-item menu items
+                    final int id;
                     if( isNavNotBottomNav ) {
-                        final int id = getAFreeId();
-                        addNavMenuItem( id, navMenu.getItem(getMenuItemsCount() - 1).getOrder() + 1, userInputText );
+                        id = getAFreeId( FragmentId, true, navMenu );
+                        addNavMenuItem( id, navMenu.getItem(getNavMenuItemsCount() - 1).getOrder() + 1, userInputText );
                         navigateToMenuItem( id, userInputText ); //inside this we have we setChecked to true
                         Toast.makeText(MainActivity.this, "Navigation menu item is successfully added.",
                                 Toast.LENGTH_LONG).show();
                     } else { //adding a bottom bar menu item. Actually it's making an item visible again
-
+                        id = getAFreeId( BottomNavFragmentId, false, bottomMenu );
+                        bottomMenu.add( R.id.bottombar_menuitems, id,
+                                bottomMenu.getItem(bottomMenu.size() - 1 ).getOrder() + 1, userInputText )
+                                    .setChecked(true);
+                        Toast.makeText(MainActivity.this, "Bottom navigation menu item is successfully added.",
+                                Toast.LENGTH_LONG).show();
                     }
                 }
 
-                private int getAFreeId() { //that has not been used in any of the menu items
-                    final int size = getMenuItemsCount();
+                private int getAFreeId( int[] FragmentId, boolean isNavNotBottomNav, Menu navMenu ) { //that has not been used in any of the menu items
+                    final int size;
+                    if( isNavNotBottomNav ) {
+                        size = getNavMenuItemsCount();
+                    } else {
+                        size = bottomMenu.size();
+                    }
                     for (int fragmentId : FragmentId) {
                         //Log.i("getAFreeId", "FragmentId[j] " + fragmentId );
                         int i;
@@ -480,7 +494,7 @@ public class MainActivity extends AppCompatActivity {
             toolbar.setTitle( title );
         }
 
-           private boolean isUserInputTextNotFine(@org.jetbrains.annotations.NotNull String userInputText,
+            private boolean isUserInputTextNotFine( @org.jetbrains.annotations.NotNull String userInputText,
                                                   boolean isNavNotBottomNav ) {
                 final int Max_Menu_Item_Chars = 25;
                 if( userInputText.equals("") ) {
@@ -534,17 +548,17 @@ public class MainActivity extends AppCompatActivity {
         Log.i("Youssef", "inside MainActivity : onResume");
     }
 
-    public void setFirstOptionsMenuIcon() { //it's because of the visibility thing, I  had to call it from ChooseMenuIconFragment as well
-        Drawable first_icon = navMenu.getItem(0).getIcon();
-        if( first_icon != null ) {
-            Log.i("Youssef", "inside setFirstOptionsMenuIcon : icon is not null");
-            toolbar.getMenu().getItem(0).setVisible( true );
-            toolbar.getMenu().getItem(0).setIcon( first_icon );
-        } else {
-            Log.i("Youssef", "inside setFirstOptionsMenuIcon : icon is null");
-            toolbar.getMenu().getItem(0).setVisible( false ); //probably better than toolbar.getMenu().getItem(0).setIcon( 0 );
+        public void setFirstOptionsMenuIcon() { //it's because of the visibility thing, I  had to call it from ChooseMenuIconFragment as well
+            Drawable first_icon = navMenu.getItem(0).getIcon();
+            if( first_icon != null ) {
+                Log.i("Youssef", "inside setFirstOptionsMenuIcon : icon is not null");
+                toolbar.getMenu().getItem(0).setVisible( true );
+                toolbar.getMenu().getItem(0).setIcon( first_icon );
+            } else {
+                Log.i("Youssef", "inside setFirstOptionsMenuIcon : icon is null");
+                toolbar.getMenu().getItem(0).setVisible( false ); //probably better than toolbar.getMenu().getItem(0).setIcon( 0 );
+            }
         }
-    }
 
     private final int REQUEST_CODE_LOAD_IMG = 1;
     private ImageButton imageButton_navheadermain;
@@ -603,14 +617,7 @@ public class MainActivity extends AppCompatActivity {
                     break;
                     /*
                 case CHOOSE_MENUICON_REQUESTCODE:
-                    if( resultCode == RESULT_OK ) {
-                        int icon_drawable_id = data.getExtras().getInt("icon_drawable_id");
-                        Log.i("ChooseMenuIconFragment", "icon name is " + icon_drawable_id );
-                        Drawable myIcon = getResources().getDrawable( icon_drawable_id );
-                        //menu.getItem( getCheckedItemOrder() ).setIcon(R.drawable.ic_menu_camera);
-                        menu.getItem( getCheckedItemOrder() ).setIcon( myIcon );
-                    }
-                    break;
+
                      */
                 default:
                     break;
@@ -666,7 +673,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Related to the navigation menu. Used to know the checked navigation menu item. It's really needed, especially for onNavigationItemSelected
         private int getCheckedItemOrder() { //this is different than OnNavigationItemSelectedListener in that in the latter, it's not yet checked, but in the process of being so. While with getCheckedItemOrder it's already checked.
-            final int size = getMenuItemsCount();
+            final int size = getNavMenuItemsCount();
             for( int i = 0; i < size; i++ ) {
                 MenuItem item = navMenu.getItem(i);
                 if( item.isChecked() ) {
@@ -684,7 +691,7 @@ public class MainActivity extends AppCompatActivity {
             return -1;
         }
 
-        private int getMenuItemsCount() { //will always be menu.size() - 1, according to the structure of activity_main_drawer.xml file
+        private int getNavMenuItemsCount() { //will always be menu.size() - 1, according to the structure of activity_main_drawer.xml file
             int count = 0;
             Log.i("Youssef", "menu size is " + navMenu.size() );
             for( int i = 0; i < navMenu.size(); i++ ) { //going till i < menu.size() - 1 is also fine, but anyway.
@@ -699,7 +706,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private boolean isNavigationItemNameAlreadyExisting( String newName, boolean isNavNotBottomNav ) {
-            final int size = getMenuItemsCount();
+            final int size;
+            if( isNavNotBottomNav ) {
+                size = getNavMenuItemsCount();
+            } else {
+                size = bottomMenu.size();
+            }
             for (int i = 0; i < size; i++) {
                 MenuItem item;
                 if( isNavNotBottomNav ) {
@@ -811,10 +823,10 @@ public class MainActivity extends AppCompatActivity {
                 if( bottomNavigationView.getVisibility() == BottomNavigationView.VISIBLE ) {
                     Log.i("Youssef", "after pressing the bottombar action menu. Bottom bar is visible");
                     item.getSubMenu().setGroupVisible( R.id.bottombar_exists,true ); //it works but toolbar.getMenu().setGroupEnabled( ... ); doesn't work maybe because the group is not a direct child
-                    toolbar.getMenu().findItem(R.id.bottombar_add).setVisible( false );
+                    toolbar.getMenu().findItem( R.id.bottombar_add ).setVisible( false );
                 } else {
                     Log.i("Youssef", "after pressing the bottombar action menu. Bottom bar is invisible");
-                    toolbar.getMenu().findItem(R.id.bottombar_add).setVisible( true );
+                    toolbar.getMenu().findItem( R.id.bottombar_add ).setVisible( true );
                     item.getSubMenu().setGroupVisible( R.id.bottombar_exists,false );
                 }
                 return true;
@@ -832,7 +844,7 @@ public class MainActivity extends AppCompatActivity {
                 navController.navigate( R.id.nav_color, bundle );
                 return true;
             case R.id.bottombar_addtab:
-                if( bottomMenu.size() >= 4 )  {
+                if( bottomMenu.size() >= BottomNavFragmentId.length )  {
                     Toast.makeText(MainActivity.this, "This is the maximum tabs you may have " +
                             "for this version.\n" +
                             "Please contact the developer for another version of the app.", Toast.LENGTH_LONG ).show();
@@ -855,14 +867,76 @@ public class MainActivity extends AppCompatActivity {
             case R.id.bottombar_deletetab:
                 checkedItemOrder = getCheckedItemOrder_ofBottomBar();
                 if( checkedItemOrder != -1 ) {
-                    bottomMenu.getItem( checkedItemOrder ).setVisible(false);
+                    bottomMenu.removeItem( bottomMenu.getItem( checkedItemOrder ).getItemId() );
+                    Toast.makeText(MainActivity.this, "Bottom menu item is removed successfully",
+                            Toast.LENGTH_LONG ).show();
+                }
+                return true;
+            case R.id.bottombar_movetableft:
+                int size = bottomMenu.size();
+                checkedItemOrder = getCheckedItemOrder_ofBottomBar();
+                if( checkedItemOrder != -1 ) {
+                    if( size < 2 ) {
+                        Toast.makeText(MainActivity.this,"Cannot reorder.\n" +
+                                "Just one item exists !", Toast.LENGTH_LONG ).show();
+                        return false;
+                    }
+                    if( checkedItemOrder == 0 ) {
+                        Toast.makeText(MainActivity.this,
+                                "Menu Item is already on the most left !", Toast.LENGTH_LONG ).show();
+                        return false;
+                    }
+                    final String title2 = bottomMenu.getItem( checkedItemOrder ).getTitle().toString();
+                    final Drawable drawable2 = bottomMenu.getItem( checkedItemOrder ).getIcon();
+                    final int id2 = bottomMenu.getItem( checkedItemOrder ).getItemId();
+                    final int order2 = bottomMenu.getItem( checkedItemOrder ).getOrder();
+                    final String title1 = bottomMenu.getItem( checkedItemOrder - 1 ).getTitle().toString();
+                    final Drawable drawable1 = bottomMenu.getItem( checkedItemOrder - 1 ).getIcon();
+                    final int id1 = bottomMenu.getItem( checkedItemOrder - 1 ).getItemId();
+                    final int order1 = bottomMenu.getItem( checkedItemOrder - 1 ).getOrder();
+                    bottomMenu.removeItem( id1 );
+                    bottomMenu.removeItem( id2 );
+                    bottomMenu.add( R.id.bottombar_menuitems, id1, order2, title1 );
+                    bottomMenu.add( R.id.bottombar_menuitems, id2, order1, title2 )
+                            .setChecked(true);
+                    bottomMenu.findItem( id2 ).setIcon( drawable2 );
+                    bottomMenu.findItem( id1 ).setIcon( drawable1 );
+                    //I won't be navigating. Since we already see a fragment, and no need to reenter in it again
+                    Toast.makeText(MainActivity.this, "Successful reordering", Toast.LENGTH_SHORT ).show();
                 }
                 return true;
             case R.id.bottombar_movetabright:
-
-                return true;
-            case R.id.bottombar_movetableft:
-
+                size = bottomMenu.size();
+                checkedItemOrder = getCheckedItemOrder_ofBottomBar();
+                if( checkedItemOrder != -1 ) {
+                    if( size < 2 ) {
+                        Toast.makeText(MainActivity.this,"Cannot reorder.\n" +
+                                "Just one item exists !", Toast.LENGTH_LONG ).show();
+                        return false;
+                    }
+                    if( checkedItemOrder == size - 1 ) {
+                        Toast.makeText(MainActivity.this,
+                                "Menu Item is already on the most right !", Toast.LENGTH_LONG ).show();
+                        return false;
+                    }
+                    final String title2 = bottomMenu.getItem( checkedItemOrder ).getTitle().toString();
+                    final Drawable drawable2 = bottomMenu.getItem( checkedItemOrder ).getIcon();
+                    final int id2 = bottomMenu.getItem( checkedItemOrder ).getItemId();
+                    final int order2 = bottomMenu.getItem( checkedItemOrder ).getOrder();
+                    final String title1 = bottomMenu.getItem( checkedItemOrder + 1 ).getTitle().toString();
+                    final Drawable drawable1 = bottomMenu.getItem( checkedItemOrder + 1 ).getIcon();
+                    final int id1 = bottomMenu.getItem( checkedItemOrder + 1 ).getItemId();
+                    final int order1 = bottomMenu.getItem( checkedItemOrder + 1 ).getOrder();
+                    bottomMenu.removeItem( id1 );
+                    bottomMenu.removeItem( id2 );
+                    bottomMenu.add( R.id.bottombar_menuitems, id1, order2, title1 );
+                    bottomMenu.add( R.id.bottombar_menuitems, id2, order1, title2 )
+                            .setChecked(true);
+                    bottomMenu.findItem( id2 ).setIcon( drawable2 );
+                    bottomMenu.findItem( id1 ).setIcon( drawable1 );
+                    //I won't be navigating. Since we already see a fragment, and no need to reenter in it again
+                    Toast.makeText(MainActivity.this, "Successful reordering", Toast.LENGTH_SHORT ).show();
+                }
                 return true;
             case R.id.termsandconditions_menuitem:
                 adminTermsAndConditions_AlertDialog();
