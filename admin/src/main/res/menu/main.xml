@@ -47,6 +47,10 @@
                     android:icon="@drawable/ic_format_paint_black_24dp"
                     android:title="Assign Background Color" />
                 <item
+                    android:id="@+id/topbar_hamburgercolor"
+                    android:icon="@drawable/ic_menu_black_24dp"
+                    android:title="Assign Hamburger Color" />
+                <item
                     android:id="@+id/topbar_titlecolor"
                     android:icon="@drawable/ic_format_color_text_black_24dp"
                     android:title="Assign Title Color" />

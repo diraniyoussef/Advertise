@@ -15,13 +15,9 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.text.InputType;
 import android.util.Log;
-import android.view.ActionProvider;
-import android.view.ContextMenu;
 import android.view.MenuItem;
-import android.view.SubMenu;
 import android.view.View;
 import android.view.Menu;
-import android.view.Window;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -38,26 +34,21 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 
-import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.constraintlayout.widget.Group;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.navigation.NavController;
-import androidx.navigation.NavDestination;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-
-import static android.content.res.Resources.getSystem;
+import androidx.room.Room;
+import androidx.sqlite.db.SupportSQLiteDatabase;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -500,6 +491,11 @@ public class MainActivity extends AppCompatActivity {
                 if( userInputText.equals("") ) {
                     return true; //we won't make a change
                 }
+                if( userInputText.contains("_") ) {
+                    Toast.makeText(MainActivity.this, "We're not allowed to use underscore \"_\" in naming.",
+                            Toast.LENGTH_LONG).show();
+                    return true; //we won't make a change
+                }
                 if( userInputText.length() > Max_Menu_Item_Chars ) {
                     Toast.makeText(MainActivity.this, "The name you entered is too long.",
                             Toast.LENGTH_LONG).show();
@@ -522,11 +518,35 @@ public class MainActivity extends AppCompatActivity {
                     drawer.closeDrawer(GravityCompat.START); //after this, onResume in the fragment is called. Tested. Still, it's better to make sure using a timer or something.
                     toolbar.setTitle( userInputText );
                 }
+
     @Override
     public void onStart() {
         super.onStart();
         Log.i("Youssef", "inside MainActivity : onStart");
+        ( new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                db = Room.databaseBuilder( getApplicationContext(),
+                        AppDatabase.class, "my_db" ).build();
+                permanentDao = db.permanentDao();
+                NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
+                if ( navHeaderEntity == null ) {
+                    Log.i("Youssef", "inside MainActivity : onStart. No nav header entity exists.");
+                    //create a record. We only need 1.
+                    navHeaderEntity = new NavHeaderEntity();
+                    permanentDao.insertNavHeader( navHeaderEntity );
+                } else {
+                    Log.i("Youssef", "inside MainActivity : onStart. A nav header entity already exists.");
+                }
+            }
+        }).start(); //I'm not sequencing threads because I'm assuming that this thread is almost intantaneous
     }
+
+    void updateNavHeader() {
+
+        s = db.getOpenHelper().getWritableDatabase();
+
+    }
+
     @Override
     public void onPause() {
         super.onPause();
@@ -536,16 +556,33 @@ public class MainActivity extends AppCompatActivity {
     public void onStop() {
         super.onStop();
         Log.i("Youssef", "inside MainActivity : onStop");
+        db.close();
     }
     @Override
     public void onDestroy() {
         super.onDestroy();
         Log.i("Youssef", "inside MainActivity : onDestroy");
     }
+
+    private AppDatabase db;
+    private PermanentDao permanentDao;
+    private SupportSQLiteDatabase s;
     @Override
     protected void onResume() {
         super.onResume();
+        /*
+                    final LinearLayout mainLinearLayout = (LinearLayout) findViewById(R.id.main_linearlayout);
+                    final TextView textView = new TextView(MainActivity.this);
+                    textView.setLayoutParams( new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT) );
+                    textView.setText("لا يوجد أي تعميم مسجّل في قاعدة البيانات.");
+                    MainActivity.this.runOnUiThread(new Runnable() {
+                        public void run() {
+                            mainLinearLayout.addView(textView);
+                        }
+                    });
+*/
         Log.i("Youssef", "inside MainActivity : onResume");
+
     }
 
         public void setFirstOptionsMenuIcon() { //it's because of the visibility thing, I  had to call it from ChooseMenuIconFragment as well
@@ -590,22 +627,34 @@ public class MainActivity extends AppCompatActivity {
                                 Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
                                 return;
                             }
-                            final SharedPreferences.Editor prefs_editor = client_app_data.edit();
+                            //final SharedPreferences.Editor prefs_editor = client_app_data.edit();
 
                             final InputStream imageStream = getContentResolver().openInputStream(imageUri);
                             Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
                             selectedImage = Bitmap.createScaledBitmap(selectedImage, 220, 220, false);
                             //saving the image in the scaled size
-                            String imagePath = getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                            final String imagePath = getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
                                     + File.separator + "navmenu.jpg";
                             File f = new File(imagePath); //https://stackoverflow.com/questions/57116335/environment-getexternalstoragedirectory-deprecated-in-api-level-29-java and https://developer.android.com/reference/android/content/Context#getExternalFilesDirs(java.lang.String)
                             OutputStream fOut = new FileOutputStream(f);
                             selectedImage.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
                             fOut.flush();
                             fOut.close();
-                            prefs_editor.putString(imagePath_key, imagePath).apply();
-                            imageButton_navheadermain.setImageBitmap(selectedImage);
-
+                            //prefs_editor.putString(imagePath_key, imagePath).apply();
+                            final Bitmap bitmap = selectedImage;
+                            ( new Thread() {
+                                public void run() {
+                                    NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
+                                    navHeaderEntity.imagePath = imagePath;
+                                    permanentDao.updateNavHeader(navHeaderEntity);
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            imageButton_navheadermain.setImageBitmap( bitmap );
+                                        }
+                                    });
+                                }
+                            }).start();
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                             Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
@@ -770,10 +819,9 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-
     //Called when the user presses a menu item below the 3 vertical dots.
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected( MenuItem item ) {
         Log.i("Youssef", "MainActivity - inside onOptionsItemSelected");
         switch( item.getItemId() ) {
             case R.id.homenavigationitem_mainmenuitem:
@@ -781,7 +829,8 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case R.id.refresh_mainmenuitem:
                 //for fetching data from server
-
+                Toast.makeText(MainActivity.this, "Refreshing Data to/from Server.",
+                        Toast.LENGTH_LONG ).show();
                 return true;
             case R.id.statusbar_color:
                 Bundle bundle = new Bundle();
@@ -805,6 +854,12 @@ public class MainActivity extends AppCompatActivity {
                 bundle = new Bundle();
                 bundle.putInt( "index_of_navmenuitem" , getCheckedItemOrder() );
                 bundle.putString( "action", "top bar background color" );
+                navController.navigate( R.id.nav_color, bundle );
+                return true;
+            case R.id.topbar_hamburgercolor:
+                bundle = new Bundle();
+                bundle.putInt( "index_of_navmenuitem" , getCheckedItemOrder() );
+                bundle.putString( "action", "top bar hamburger color" );
                 navController.navigate( R.id.nav_color, bundle );
                 return true;
             case R.id.topbar_titlecolor:
@@ -957,6 +1012,12 @@ public class MainActivity extends AppCompatActivity {
             int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
             toolbar.setBackgroundColor( ContextCompat.getColor(this, color_id) );
         }
+        public void setTopBarHamburgerColor( String tag ) {
+            int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
+            toolbar.getNavigationIcon().setColorFilter(
+                    ContextCompat.getColor(this, color_id ), PorterDuff.Mode.SRC_ATOP );
+        }
+
         public void setTopBarTitleColor( String tag ) {
             int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
             toolbar.setTitleTextColor( getResources().getColor( color_id ) ); //the action bar text
@@ -1046,13 +1107,23 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
             //loading the image from the last known URI (if selected by user)
-            String imagePath = client_app_data.getString(imagePath_key, "");
-            if (!imagePath.equals("")) {
-                Log.i("Youssef", "imagePath is " + imagePath);
-                Uri imageUri = Uri.fromFile(new File(imagePath));
-                imageButton_navheadermain.setImageURI( imageUri ); //It works even if the path contains spaces.
+            //String imagePath = client_app_data.getString(imagePath_key, "");
+            ( new Thread() { //opening the database needs to be on a separate thread.
+                public void run() {
+                    String imagePath = permanentDao.getNavHeader().imagePath; //interesting how the compiler does not complain for an NPE
+                    if( imagePath != null && !imagePath.equals("") ) {
+                        Log.i("Youssef", "imagePath is " + imagePath);
+                        final Uri imageUri = Uri.fromFile(new File(imagePath));
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                imageButton_navheadermain.setImageURI( imageUri ); //It works even if the path contains spaces.
+                            }
+                        });
+                    }
+                }
+            }).start();
 
-            }
         }
     }
 

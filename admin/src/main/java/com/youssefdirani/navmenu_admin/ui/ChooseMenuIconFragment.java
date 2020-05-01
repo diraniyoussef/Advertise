@@ -93,6 +93,7 @@ public class ChooseMenuIconFragment extends Fragment {
         Log.i("ChooseMenuIconFragment", "inside onResume");
         super.onResume();
         //activity.onBackPressed();
+
     }
 
     @Override
