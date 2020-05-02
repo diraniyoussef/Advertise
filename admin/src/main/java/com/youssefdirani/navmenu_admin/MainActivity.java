@@ -611,72 +611,19 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-        //Related to the navigation menu. Used to retrieve the image from gallery and save it
-        //public final int CHOOSE_MENUICON_REQUESTCODE = 2;
-        @Override
-        public void onActivityResult( int reqCode, int resultCode, Intent data ) {
-            super.onActivityResult(reqCode, resultCode, data);
-            Log.i("onActivityResult", "inside");
-            switch( reqCode ) {
-                case REQUEST_CODE_LOAD_IMG:
-                    if( resultCode == RESULT_OK ) {
-                        try {
-                            final Uri imageUri = data.getData();
-
-                            if (imageUri == null) {//should never happen
-                                Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
-                                return;
-                            }
-                            //final SharedPreferences.Editor prefs_editor = client_app_data.edit();
-
-                            final InputStream imageStream = getContentResolver().openInputStream(imageUri);
-                            Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
-                            selectedImage = Bitmap.createScaledBitmap(selectedImage, 220, 220, false);
-                            //saving the image in the scaled size
-                            final String imagePath = getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-                                    + File.separator + "navmenu.jpg";
-                            File f = new File(imagePath); //https://stackoverflow.com/questions/57116335/environment-getexternalstoragedirectory-deprecated-in-api-level-29-java and https://developer.android.com/reference/android/content/Context#getExternalFilesDirs(java.lang.String)
-                            OutputStream fOut = new FileOutputStream(f);
-                            selectedImage.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
-                            fOut.flush();
-                            fOut.close();
-                            //prefs_editor.putString(imagePath_key, imagePath).apply();
-                            final Bitmap bitmap = selectedImage;
-                            ( new Thread() {
-                                public void run() {
-                                    NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
-                                    navHeaderEntity.imagePath = imagePath;
-                                    permanentDao.updateNavHeader(navHeaderEntity);
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            imageButton_navheadermain.setImageBitmap( bitmap );
-                                        }
-                                    });
-                                }
-                            }).start();
-                        } catch (FileNotFoundException e) {
-                            e.printStackTrace();
-                            Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
-                        } catch (IOException e) { //for the sake of fOut.flush and .close
-                            e.printStackTrace();
-                            Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
-                        }
-                    }
-                    break;
-                    /*
-                case CHOOSE_MENUICON_REQUESTCODE:
-
-                     */
-                default:
-                    break;
-            }
-        }
-
-        public void setLayoutColor( int linearlayout_id, String tag ) {
+        public void setLayoutColor( int linearlayout_id, final String tag ) { //this is same as saying setNavHeaderBackgroundColor
             LinearLayout linearLayout = findViewById( linearlayout_id );
             int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
             linearLayout.setBackgroundColor( getResources().getColor( color_id ) );
+            //saving into the database
+            ( new Thread() { //opening the database needs to be on a separate thread.
+                public void run() {
+                    NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
+                    Log.i("Youssef", "Saving nav host background onto the database");
+                    navHeaderEntity.backgroundColor = tag;
+                    permanentDao.updateNavHeader(navHeaderEntity);
+                }
+            } ).start();
         }
         public void setIconOfCheckedNavMenuItem( String tag, int nav_menuitem_index, String menu ) {
             //since getCheckedItemOrder() when called from ChooseNavMenuIconFragment can't know the index (order), so we're using nav_menuitem_index
@@ -1070,6 +1017,10 @@ public class MainActivity extends AppCompatActivity {
                     "5) If you had to show any lady (others or yourself if you are a female), " +
                     "please make sure she is wearing a vail and that her clothing is spacious enough not to clearly define " +
                     "her body." +
+                    "\n" +
+                    "6) You may not put any kind of music in the app." +
+                    "\n" +
+                    "7) You may not directly link to anything that infringes the above restrictions." +
                     "\n\n" +
                     "For any question or technical assistance, please contact the developer +961/70/853721");
             final ScrollView scrollView = new ScrollView(this);
@@ -1084,48 +1035,189 @@ public class MainActivity extends AppCompatActivity {
     //Called when the user presses on the stack navigation icon in order to navigate https://developer.android.com/reference/android/support/v7/app/AppCompatActivity#onSupportNavigateUp()
     @Override
     public boolean onSupportNavigateUp() {
-        loadNavMenuImage();
+        setAndLoadNavHeaderImage();
+        setAndLoadNavHeaderTitles();
+        loadNavHeaderBackgroundColor();
         Log.i("Youssef", "MainActivity - inside onSupportNavigateUp");
         return NavigationUI.navigateUp(navController, mAppBarConfiguration)
                 || super.onSupportNavigateUp();
 
     }
 
-    //Related to the navigation menu (header actually)
-    private void loadNavMenuImage() {
-        imageButton_navheadermain = findViewById(R.id.imagebutton_navheadermain);
-        if( imageButton_navheadermain == null ) { //won't be null I believe
-            Log.i("Youssef", "imageButton_navheadermain is null");
-        } else {
-            //for the client app, it's best to store the image to sd-card and the path to shared preferences https://stackoverflow.com/questions/8586242/how-to-store-images-using-sharedpreference-in-android
-            imageButton_navheadermain.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                    photoPickerIntent.setType("image/*");
-                    startActivityForResult(photoPickerIntent, REQUEST_CODE_LOAD_IMG);
-                }
-            });
-            //loading the image from the last known URI (if selected by user)
-            //String imagePath = client_app_data.getString(imagePath_key, "");
+        private void loadNavHeaderBackgroundColor() {
             ( new Thread() { //opening the database needs to be on a separate thread.
                 public void run() {
-                    String imagePath = permanentDao.getNavHeader().imagePath; //interesting how the compiler does not complain for an NPE
-                    if( imagePath != null && !imagePath.equals("") ) {
-                        Log.i("Youssef", "imagePath is " + imagePath);
-                        final Uri imageUri = Uri.fromFile(new File(imagePath));
+                    NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
+                    Log.i("Youssef", "Loading nav host background color from the database");
+                    final String backgroundColorTag = navHeaderEntity.backgroundColor;
+                    if( backgroundColorTag != null && !backgroundColorTag.equals("") ) {
+                        final LinearLayout linearLayout = findViewById(R.id.linearlayout_navheader);
+                        final int color_id = getResources().getIdentifier( backgroundColorTag,
+                                "color", getPackageName() );
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                imageButton_navheadermain.setImageURI( imageUri ); //It works even if the path contains spaces.
+                                linearLayout.setBackgroundColor( getResources().getColor( color_id ) );
                             }
                         });
                     }
                 }
-            }).start();
-
+            } ).start();
         }
-    }
+
+        private void setAndLoadNavHeaderTitles() {
+            final EditText editText_navHeaderTitle = findViewById(R.id.editText_navheadertitle);
+            final EditText editText_navHeaderSubtitle = findViewById(R.id.editText_navheadersubtitle);
+            View.OnFocusChangeListener onFocusChangeListener = new View.OnFocusChangeListener() {
+                @Override
+                public void onFocusChange(View v, boolean hasFocus) {
+                    if( ( v.equals( editText_navHeaderTitle ) || v.equals( editText_navHeaderSubtitle ) ) && !hasFocus ) {
+                        final EditText editText = (EditText) v;
+                        // code to execute when EditText loses focus
+                        ( new Thread() { //opening the database needs to be on a separate thread.
+                            public void run() {
+                                NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
+                                if( editText.equals( editText_navHeaderTitle )) {
+                                    Log.i("Youssef", "edittext header title has lost focus");
+                                    navHeaderEntity.title = editText.getText().toString();
+                                    permanentDao.updateNavHeader( navHeaderEntity );
+                                }
+                                if( editText.equals( editText_navHeaderSubtitle )) {
+                                    Log.i("Youssef", "edittext header subtitle has lost focus");
+                                    navHeaderEntity.subtitle = editText.getText().toString();
+                                    permanentDao.updateNavHeader( navHeaderEntity );
+                                }
+                            }
+                        }).start();
+
+                    }
+                }
+            };
+            editText_navHeaderTitle.setOnFocusChangeListener( onFocusChangeListener );
+            editText_navHeaderSubtitle.setOnFocusChangeListener( onFocusChangeListener );
+
+            //now loading
+            ( new Thread() { //opening the database needs to be on a separate thread.
+                public void run() {
+                    final String navHeaderTitle = permanentDao.getNavHeader().title; //interesting how the compiler does not complain for an NPE
+                    if( navHeaderTitle != null && !navHeaderTitle.equals("") ) {
+                        Log.i("Youssef", "navHeaderTitle is " + navHeaderTitle);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                editText_navHeaderTitle.setText( navHeaderTitle );
+                            }
+                        });
+                    }
+                    final String navHeaderSubTitle = permanentDao.getNavHeader().subtitle; //interesting how the compiler does not complain for an NPE
+                    if( navHeaderSubTitle != null && !navHeaderSubTitle.equals("") ) {
+                        Log.i("Youssef", "navHeaderSubTitle is " + navHeaderSubTitle);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                editText_navHeaderSubtitle.setText( navHeaderSubTitle );
+                            }
+                        });
+                    }
+                }
+            } ).start();
+        }
+
+        //Related to the navigation menu (header actually)
+        private void setAndLoadNavHeaderImage() {
+            imageButton_navheadermain = findViewById(R.id.imagebutton_navheadermain);
+            if( imageButton_navheadermain == null ) { //won't be null I believe
+                Log.i("Youssef", "imageButton_navheadermain is null");
+            } else {
+                //for the client app, it's best to store the image to sd-card and the path to shared preferences https://stackoverflow.com/questions/8586242/how-to-store-images-using-sharedpreference-in-android
+                imageButton_navheadermain.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+                        photoPickerIntent.setType("image/*");
+                        startActivityForResult(photoPickerIntent, REQUEST_CODE_LOAD_IMG);
+                    }
+                });
+                //loading the image from the last known URI (if selected by user)
+                //String imagePath = client_app_data.getString(imagePath_key, "");
+                ( new Thread() { //opening the database needs to be on a separate thread.
+                    public void run() {
+                        String imagePath = permanentDao.getNavHeader().imagePath; //interesting how the compiler does not complain for an NPE
+                        if( imagePath != null && !imagePath.equals("") ) {
+                            Log.i("Youssef", "imagePath is " + imagePath);
+                            final Uri imageUri = Uri.fromFile(new File(imagePath));
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    imageButton_navheadermain.setImageURI( imageUri ); //It works even if the path contains spaces.
+                                }
+                            });
+                        }
+                    }
+                } ).start();
+            }
+        }
+
+            //Related to the navigation menu. Used to retrieve the image from gallery and save it
+            @Override
+            public void onActivityResult( int reqCode, int resultCode, Intent data ) {
+                super.onActivityResult(reqCode, resultCode, data);
+                Log.i("onActivityResult", "inside");
+                switch( reqCode ) {
+                    case REQUEST_CODE_LOAD_IMG:
+                        if( resultCode == RESULT_OK ) {
+                            try {
+                                final Uri imageUri = data.getData();
+
+                                if (imageUri == null) {//should never happen
+                                    Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
+                                    return;
+                                }
+                                //final SharedPreferences.Editor prefs_editor = client_app_data.edit();
+
+                                final InputStream imageStream = getContentResolver().openInputStream(imageUri);
+                                Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
+                                selectedImage = Bitmap.createScaledBitmap(selectedImage, 220, 220, false);
+                                //saving the image in the scaled size
+                                final String imagePath = getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                                        + File.separator + "navmenu.jpg";
+                                File f = new File(imagePath); //https://stackoverflow.com/questions/57116335/environment-getexternalstoragedirectory-deprecated-in-api-level-29-java and https://developer.android.com/reference/android/content/Context#getExternalFilesDirs(java.lang.String)
+                                OutputStream fOut = new FileOutputStream(f);
+                                selectedImage.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
+                                fOut.flush();
+                                fOut.close();
+                                //prefs_editor.putString(imagePath_key, imagePath).apply();
+                                final Bitmap bitmap = selectedImage;
+                                ( new Thread() {
+                                    public void run() {
+                                        NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
+                                        navHeaderEntity.imagePath = imagePath;
+                                        permanentDao.updateNavHeader(navHeaderEntity);
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                imageButton_navheadermain.setImageBitmap( bitmap );
+                                            }
+                                        });
+                                    }
+                                }).start();
+                            } catch (FileNotFoundException e) {
+                                e.printStackTrace();
+                                Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
+                            } catch (IOException e) { //for the sake of fOut.flush and .close
+                                e.printStackTrace();
+                                Toast.makeText(this, "Something went wrong", Toast.LENGTH_LONG).show();
+                            }
+                        }
+                        break;
+                            /*
+                        case CHOOSE_MENUICON_REQUESTCODE:
+
+                             */
+                    default:
+                        break;
+                }
+            }
 
     @Override
     public void onBackPressed()

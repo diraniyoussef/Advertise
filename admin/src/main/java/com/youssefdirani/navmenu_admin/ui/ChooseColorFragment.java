@@ -41,7 +41,7 @@ public class ChooseColorFragment extends Fragment {
                     switch( getArguments().getString("action") ) {
                         case "navigation layout background":
                             final int idOfLayout = getArguments().getInt("id_of_layout");
-                            activity.setLayoutColor( idOfLayout, tag );
+                            activity.setLayoutColor( idOfLayout, tag );//this is same as saying setNavHeaderBackgroundColor
                             break;
                         case "status bar background color":
                             activity.setStatusBarColor( tag );
