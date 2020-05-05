@@ -51,10 +51,10 @@ public class ChooseMenuIconFragment extends Fragment {
                     action = getArguments().getString("action");
                     switch( action ) {
                         case "navigation menu icon":
-                            activity.setIconOfCheckedNavMenuItem( tag, indexOfNavMenuItem, "nav menu");
+                            activity.setIconOfCheckedMenuItem( tag, indexOfNavMenuItem, "nav menu");
                             break;
                         case "bottom bar menu item":
-                            activity.setIconOfCheckedNavMenuItem( tag, indexOfNavMenuItem, "bottom nav menu");
+                            activity.setIconOfCheckedMenuItem( tag, indexOfNavMenuItem, "bottom nav menu");
                             break;
                         default:
                     }
@@ -106,7 +106,7 @@ public class ChooseMenuIconFragment extends Fragment {
         if( indexOfNavMenuItem != -1 ) {
             activity.updateToolbarTitle( indexOfNavMenuItem ); //unfortunately needed.
         }
-        activity.showOptionsMenuAndBottomMenu();
+        activity.showOptionsMenuAndBottomMenu( indexOfNavMenuItem );
         if( indexOfNavMenuItem == 0 ) { //it's ok to omit this anyway
             activity.setFirstOptionsMenuIcon();
         }

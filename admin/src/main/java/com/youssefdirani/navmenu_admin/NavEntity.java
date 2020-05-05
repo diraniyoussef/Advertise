@@ -4,36 +4,41 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-
 @Entity(tableName = "nav")
 public class NavEntity {
     @PrimaryKey  //(autoGenerate = true)// is same as autoincrement.
-    public int order; //may be needed for it to be auto-incremented
+    int uid = 0;
+
+    @ColumnInfo(name = "index")
+    int index; //may be needed for it to be auto-incremented
 
     @ColumnInfo(name = "title")
-    public String title;
+    String title;
 
     @ColumnInfo(name = "icon_tag")
-    public String iconTag;
+    String iconTag;
 
     @ColumnInfo(name = "statusbar_backgroundcolortag")
-    public String statusBar_backgroundColorTag;
+    String statusBar_backgroundColorTag;
 
     @ColumnInfo(name = "statusbar_dark")
-    public Boolean statusBar_dark;
+    boolean statusBar_dark;
 
     @ColumnInfo(name = "topbar_backgroundcolortag")
-    public String topBar_backgroundColorTag;
+    String topBar_backgroundColorTag;
 
     @ColumnInfo(name = "topbar_hamburgercolortag")
-    public String topBar_hamburgerColorTag;
+    String topBar_hamburgerColorTag;
 
     @ColumnInfo(name = "topbar_titlecolortag")
-    public String topBar_titleColorTag;
+    String topBar_titleColorTag;
 
     @ColumnInfo(name = "topbar_3dotscolortag")
-    public String topBar_3dotsColorTag;
+    String topBar_3dotsColorTag;
+
+    @ColumnInfo(name = "bottombar_exists")
+    boolean bottombar_exists = false;
 
     @ColumnInfo(name = "bottombar_backgroundcolortag")
-    public String bottombar_backgroundColorTag;
+    String bottombar_backgroundColorTag;
 }

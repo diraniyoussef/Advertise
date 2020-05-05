@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -16,6 +17,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
+import com.youssefdirani.navmenu_admin.MainActivity;
 import com.youssefdirani.navmenu_admin.R;
 
 public class HomeFragment extends Fragment {
@@ -24,7 +26,8 @@ public class HomeFragment extends Fragment {
         super.onCreate(savedInstanceState);
         Log.i("Youssef", "inside HomeFragment : onCreate");
     }
-
+    private MainActivity activity;
+    /*
     @SuppressWarnings("deprecation")
     @Override
     public void onAttach(Activity activity) {
@@ -37,35 +40,46 @@ public class HomeFragment extends Fragment {
         super.onAttach(context);
         _onAttach(context);
     }
-    Activity activity = null;
+
     private void _onAttach(Context context) { //it gets called twice
         Log.i("Youssef", "inside HomeFragment _onAttach");
         activity = (Activity) context;
     }
-
-    View root;
+    */
+    private View root;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) { //we enter this between onCreate and onStart - tested
         //container is nav_host_fragment and not mobile_navigation. Tested
-        String title;
+        activity = (MainActivity) getActivity();
+
+        int navIndex;
+        int bottombarIndex;
+        String tableName;
         Bundle args = getArguments();
+
         if( args == null ) {
-            title = "Welcome and thank you for using this app.\n" +
+            tableName = "Welcome and thank you for using this app.\n" +
                     "Please wait while we fetch data from the server.";
             Log.i("Youssef", "inside HomeFragment : no arguments");
         } else {
-            int idOfNewMenuItem = getArguments().getInt("id");
+            //this is set usually inside this method navigateToMenuItem
+            bottombarIndex = getArguments().getInt("bottombar_order"); //this will actually be 0 if the bottom bar was hidden
+            navIndex = getArguments().getInt("nav_order");
+            tableName = navIndex + "_" + bottombarIndex;
 
-            title = getArguments().getString("title");
-            Log.i("Youssef", "inside HomeFragment : id of the menu item is " + idOfNewMenuItem +
-                    " and title of the menu item is " + title );
+
+            Log.i("Youssef", "inside HomeFragment : table name is " + tableName );
             //I don't care about the id. The title determines which database table to fetch
+
         }
 
         root = inflater.inflate(R.layout.fragment_home, container, false);
-        final TextView textView = root.findViewById(R.id.text_home);
-        textView.setText( title );
 
+
+        /*
+        final TextView textView = root.findViewById(R.id.text_home);
+        textView.setText( navTitle );
+         */
         /*
         //it works
         LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(

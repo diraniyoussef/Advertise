@@ -41,15 +41,18 @@ public interface PermanentDao { //Dao is Data Access Object
     NavHeaderEntity getNavHeader();
 
     @Update
-    public void updateNavHeader(NavHeaderEntity navHeaderEntity);
+    void updateNavHeader(NavHeaderEntity navHeaderEntity); // it updates every field of the entity where it matches primary key value of navHeaderEntity. https://stackoverflow.com/questions/45789325/update-some-specific-field-of-an-entity-in-android-room
 
 //Now for the nav table
     @Insert
     void insertNav(NavEntity navEntity);
 
-    @Query( "SELECT * FROM nav WHERE 'order' LIKE :orderValue LIMIT 1" )
-    NavEntity loadById( int orderValue );
+    @Query( "SELECT * FROM nav WHERE 'index' LIKE :index LIMIT 1" )
+    NavEntity getNav( int index );
 
     @Query( "SELECT * FROM nav" )
-    List<NavEntity> getNav();
+    List<NavEntity> getAllNav();
+
+    @Update
+    void updateNav( NavEntity navEntity );
 }

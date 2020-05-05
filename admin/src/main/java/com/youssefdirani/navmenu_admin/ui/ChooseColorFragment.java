@@ -106,6 +106,6 @@ public class ChooseColorFragment extends Fragment {
         if( indexOfNavMenuItem != -1 ) {
             activity.updateToolbarTitle(indexOfNavMenuItem); //unfortunately needed.
         }
-        activity.showOptionsMenuAndBottomMenu();
+        activity.showOptionsMenuAndBottomMenu( indexOfNavMenuItem );
     }
 }
