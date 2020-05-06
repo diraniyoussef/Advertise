@@ -22,6 +22,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.lifecycle.MutableLiveData;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
@@ -84,13 +85,14 @@ public class MainActivity extends AppCompatActivity {
     DbOperations dbOperations = new DbOperations( this );
     NavOperations navOperations = new NavOperations( MainActivity.this );
     BottomNavOperations bottomNavOperations = new BottomNavOperations( MainActivity.this );
+    public MutableLiveData<String> lastBottomNav = new MutableLiveData<>();
     OptionsMenu optionsMenu = new OptionsMenu( MainActivity.this );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Log.i("Youssef", "inside MainActivity : onCreate");
+        //Log.i("Youssef", "inside MainActivity : onCreate");
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -105,16 +107,16 @@ public class MainActivity extends AppCompatActivity {
     //Called when the user presses on the stack navigation icon in order to navigate https://developer.android.com/reference/android/support/v7/app/AppCompatActivity#onSupportNavigateUp()
     @Override
     public boolean onSupportNavigateUp() {
-        Log.i("Youssef", "MainActivity - inside onSupportNavigateUp");
+        //Log.i("Youssef", "MainActivity - inside onSupportNavigateUp");
         return navOperations.onSupportNavigateUp()
                 || super.onSupportNavigateUp();
     }
-
 
     public void hideOptionsMenuAndBottomMenu() {
         toolbar.getMenu().setGroupVisible( R.id.optionsmenu_actionitemgroup,false );
         bottomNavigationView.setVisibility( BottomNavigationView.INVISIBLE );
     }
+
     public void showOptionsMenuAndBottomMenu( int indexOfNavMenuItem ) {
         toolbar.getMenu().setGroupVisible( R.id.optionsmenu_actionitemgroup,true );
 
@@ -153,7 +155,10 @@ public class MainActivity extends AppCompatActivity {
                 final int id;
                 if( isNavNotBottomNav ) {
                     id = getAFreeId( FragmentId, true, navMenu );
-                    navOperations.addNavMenuItem( id, navMenu.getItem(navOperations.getNavMenuItemsCount() - 1).getOrder() + 1, userInputText );
+                    navOperations.addNavMenuItem( id,
+                            navMenu.getItem(navOperations.getNavMenuItemsCount() - 1).getOrder() + 1,
+                            userInputText );
+                    Log.i("Youssef", "createMenuItem where title is " + userInputText);
                     navOperations.navigateToMenuItem( id, userInputText ); //inside this we have we setChecked to true
                     Toast.makeText(MainActivity.this, "Navigation menu item is successfully added.",
                             Toast.LENGTH_LONG).show();
@@ -175,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
                     size = bottomMenu.size();
                 }
                 for (int fragmentId : FragmentId) {
-                    //Log.i("getAFreeId", "FragmentId[j] " + fragmentId );
+                    ////Log.i("getAFreeId", "FragmentId[j] " + fragmentId );
                     int i;
                     for (i = 0; i < size; i++) {
                         if( navMenu.getItem(i).getItemId() == fragmentId ) {
@@ -232,31 +237,31 @@ public class MainActivity extends AppCompatActivity {
             bottomBar_exists[i] = false;
         }
 
-        Log.i("Youssef", "inside MainActivity : onStart");
+        //Log.i("Youssef", "inside MainActivity : onStart");
         //dbOperations
         dbOperations.mustHaveEntity();
     }
     @Override
     protected void onResume() {
         super.onResume();
-        Log.i("Youssef", "inside MainActivity : onResume");
+        //Log.i("Youssef", "inside MainActivity : onResume");
 
     }
     @Override
     public void onPause() {
         super.onPause();
-        Log.i("Youssef", "inside MainActivity : onPause");
+        //Log.i("Youssef", "inside MainActivity : onPause");
     }
     @Override
     public void onStop() {
         super.onStop();
-        Log.i("Youssef", "inside MainActivity : onStop");
+        //Log.i("Youssef", "inside MainActivity : onStop");
         dbOperations.onStop();
     }
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.i("Youssef", "inside MainActivity : onDestroy");
+        //Log.i("Youssef", "inside MainActivity : onDestroy");
     }
 
     //Called when user presses the 3 vertical dots on the right. Initiated when the user presses the 3 vertical dots.
@@ -264,7 +269,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);//this should be before adding menus maybe. findItem https://stackoverflow.com/questions/16500415/findviewbyid-for-menuitem-returns-null (and using menu.findItem may be better than findViewById ?, not sure)
-        Log.i("Youssef", "MainActivity - inside onCreateOptionsMenu");
+        //Log.i("Youssef", "MainActivity - inside onCreateOptionsMenu");
 
         return true;
     }
@@ -278,7 +283,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void setIconOfCheckedMenuItem( String tag, int nav_menuitem_index, String menu ) {
         //since getCheckedItemOrder() when called from ChooseNavMenuIconFragment can't know the index (order), so we're using nav_menuitem_index
-        //Log.i("seticon", "item index is " + getCheckedItemOrder());
+        ////Log.i("seticon", "item index is " + getCheckedItemOrder());
         if( tag.equalsIgnoreCase("ic_no_icon") ) {
             if( menu.equals("nav menu") ) {
                 MenuItem menuItem = navMenu.getItem( nav_menuitem_index );
@@ -364,14 +369,14 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        Log.i("Youssef", "MainActivity - inside onPrepareOptionsMenu");
+        //Log.i("Youssef", "MainActivity - inside onPrepareOptionsMenu");
         return true;
     }
 
     //Called when the user presses a menu item below the 3 vertical dots.
     @Override
     public boolean onOptionsItemSelected( MenuItem item ) {
-        Log.i("Youssef", "MainActivity - inside onOptionsItemSelected");
+        //Log.i("Youssef", "MainActivity - inside onOptionsItemSelected");
         return optionsMenu.onOptionsItemSelected( item, super.onOptionsItemSelected(item) );
     }
 

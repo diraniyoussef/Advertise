@@ -78,11 +78,11 @@ class OptionsMenu {
                 return true;
             case R.id.bottombar_actionmenu:
                 if( activity.bottomNavigationView.getVisibility() == BottomNavigationView.VISIBLE ) {
-                    Log.i("Youssef", "after pressing the bottombar action menu. Bottom bar is visible");
+                    //Log.i("Youssef", "after pressing the bottombar action menu. Bottom bar is visible");
                     item.getSubMenu().setGroupVisible( R.id.bottombar_exists,true ); //it works but toolbar.getMenu().setGroupEnabled( ... ); doesn't work maybe because the group is not a direct child
                     activity.toolbar.getMenu().findItem( R.id.bottombar_add ).setVisible( false );
                 } else {
-                    Log.i("Youssef", "after pressing the bottombar action menu. Bottom bar is invisible");
+                    //Log.i("Youssef", "after pressing the bottombar action menu. Bottom bar is invisible");
                     activity.toolbar.getMenu().findItem( R.id.bottombar_add ).setVisible( true );
                     item.getSubMenu().setGroupVisible( R.id.bottombar_exists,false );
                 }
@@ -200,7 +200,7 @@ class OptionsMenu {
                 adminTermsAndConditions_AlertDialog();
                 return true;
             default:
-                //Log.i("Youssef", "menu item id is " + item.getItemId() );
+                ////Log.i("Youssef", "menu item id is " + item.getItemId() );
                 return defautReturnValue;
         }
     }
@@ -249,11 +249,11 @@ class OptionsMenu {
     void setFirstOptionsMenuIcon() { //it's because of the visibility thing, I  had to call it from ChooseMenuIconFragment as well
         Drawable first_icon = activity.navMenu.getItem(0).getIcon();
         if( first_icon != null ) {
-            Log.i("Youssef", "inside setFirstOptionsMenuIcon : icon is not null");
+            //Log.i("Youssef", "inside setFirstOptionsMenuIcon : icon is not null");
             activity.toolbar.getMenu().getItem(0).setVisible( true );
             activity.toolbar.getMenu().getItem(0).setIcon( first_icon );
         } else {
-            Log.i("Youssef", "inside setFirstOptionsMenuIcon : icon is null");
+            //Log.i("Youssef", "inside setFirstOptionsMenuIcon : icon is null");
             activity.toolbar.getMenu().getItem(0).setVisible( false ); //probably better than toolbar.getMenu().getItem(0).setIcon( 0 );
         }
     }

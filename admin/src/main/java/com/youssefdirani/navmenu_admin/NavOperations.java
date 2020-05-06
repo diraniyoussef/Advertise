@@ -90,7 +90,7 @@ class NavOperations {
                 if( menuItem.getGroupId() != R.id.main_drawer_group ) {
                     return false;
                 }
-                //Log.i("Youssef", "position 1.");
+                //Log.i("Youssef", "OnNavigationItemSelectedListener where title is " + menuItem.getTitle() );
                 navigateToMenuItem( menuItem.getItemId(), menuItem.getTitle().toString() ); //needed I guess, it's not automatic
                 drawer.closeDrawer(GravityCompat.START);
                 return true;
@@ -107,7 +107,7 @@ class NavOperations {
                         drawer.closeDrawer(GravityCompat.START);
                         return "true";
                     case R.id.nav_addnewitem:
-                        Log.i("Youssef", "add New Menu Item is clicked.");
+                        //Log.i("Youssef", "add New Menu Item is clicked.");
                         if( activity.FragmentId.length <= getNavMenuItemsCount() ) { //the idea is == actually
                             Toast.makeText(activity, "This is the maximum menu items you may have " +
                                             "for this version.\n" +
@@ -130,8 +130,8 @@ class NavOperations {
                         drawer.closeDrawer(GravityCompat.START);
 
                         int checkedItemOrder = getCheckedItemOrder();
-                        //Log.i("Youssef", "checkedItemOrder is " + checkedItemOrder);
-                        //Log.i("Youssef", "menu size is " + menu.size() );
+                        ////Log.i("Youssef", "checkedItemOrder is " + checkedItemOrder);
+                        ////Log.i("Youssef", "menu size is " + menu.size() );
                         if( checkedItemOrder != -1 ) {
                             activity.rename_AlertDialog( navMenu.getItem( checkedItemOrder ), true );
                         }
@@ -139,21 +139,21 @@ class NavOperations {
                         //invalidateOptionsMenu(); //https://stackoverflow.com/questions/28042070/how-to-change-the-actionbar-menu-items-icon-dynamically/35911398
                         return "true";
                     case R.id.nav_deleteitem:
-                        Log.i("Youssef", "deleting...");
+                        //Log.i("Youssef", "deleting...");
                         //the following 2 lines are a hack. Without this hack, it works unreliably
                         drawer.closeDrawer(GravityCompat.START);
-                        activity.navOperations.navItemAction = activity.navOperations.Delete_Item;
+                        navItemAction = Delete_Item;
                         return "true";
                     case R.id.nav_moveupitem:
                         drawer.closeDrawer(GravityCompat.START);
-                        activity.navOperations.navItemAction = activity.navOperations.Move_Item_Up;
+                        navItemAction = Move_Item_Up;
                         return "true";
                     case R.id.nav_movedownitem:
                         drawer.closeDrawer(GravityCompat.START);
-                        activity.navOperations.navItemAction = activity.navOperations.Move_Item_Down;
+                        navItemAction = Move_Item_Down;
                         return "true";
                     default:
-                        //Log.i("Youssef", "menu item id is " + item.getItemId() );
+                        ////Log.i("Youssef", "menu item id is " + item.getItemId() );
                         return "pass";
                 }
             }
@@ -191,7 +191,7 @@ class NavOperations {
     private void setAndLoadNavHeaderImage() {
         final ImageButton imageButton_navheadermain = activity.findViewById(R.id.imagebutton_navheadermain);
         if( imageButton_navheadermain == null ) { //won't be null I believe
-            Log.i("Youssef", "imageButton_navheadermain is null");
+            //Log.i("Youssef", "imageButton_navheadermain is null");
         } else {
             //for the client app, it's best to store the image to sd-card and the path to shared preferences https://stackoverflow.com/questions/8586242/how-to-store-images-using-sharedpreference-in-android
             imageButton_navheadermain.setOnClickListener(new View.OnClickListener() {
@@ -208,7 +208,7 @@ class NavOperations {
     }
 
     void onActivityResult(int reqCode, int resultCode, Intent data) {
-        Log.i("onActivityResult", "inside");
+        //Log.i("onActivityResult", "inside");
         switch( reqCode ) {
             case REQUEST_CODE_LOAD_IMG:
                 if( resultCode == RESULT_OK ) {
@@ -263,7 +263,7 @@ class NavOperations {
         if( checkedItemOrder >= 0 ) {
             navMenu.getItem( checkedItemOrder ).setChecked(false);
         }
-        Log.i("Youssef", "order of newly created item is " + createdMenuItem.getOrder() );
+        //Log.i("Youssef", "order of newly created item is " + createdMenuItem.getOrder() );
         createdMenuItem.setChecked(true);
         setupNavigation(); //making it top-level (root) destination.
         activity.toolbar.setTitle( title );
@@ -280,14 +280,23 @@ class NavOperations {
         }
         return -1;
     }
+    int getItemOrderFromTitle( String title ) { //this is different than OnNavigationItemSelectedListener in that in the latter, it's not yet checked, but in the process of being so. While with getCheckedItemOrder it's already checked.
+        final int size = getNavMenuItemsCount();
+        for( int i = 0; i < size; i++ ) {
+            if( navMenu.getItem(i).getTitle().toString().equals(title) ) {
+                return i;
+            }
+        }
+        return -1;
+    }
     int getNavMenuItemsCount() { //will always be menu.size() - 1, according to the structure of activity_main_drawer.xml file
         int count = 0;
-        Log.i("Youssef", "menu size is " + navMenu.size() );
+        //Log.i("Youssef", "menu size is " + navMenu.size() );
         for( int i = 0; i < navMenu.size(); i++ ) { //going till i < menu.size() - 1 is also fine, but anyway.
             MenuItem item = navMenu.getItem(i);
             if( item.getGroupId() == R.id.main_drawer_group ) {
-                Log.i("Youssef", "order of item is " + item.getOrder());
-                Log.i("Youssef", "id of item is " + item.getItemId());
+                //Log.i("Youssef", "order of item is " + item.getOrder());
+                //Log.i("Youssef", "id of item is " + item.getItemId());
                 count++;
             }
         }
@@ -318,7 +327,7 @@ class NavOperations {
             }
 
             private void actOnDrawerClosed() {
-                Log.i("Youssef", "Drawer has finished closing");
+                //Log.i("Youssef", "Drawer has finished closing");
                 switch( navItemAction ) {
                     case Delete_Item:
                         navItemAction = ""; //must be first thing to do, to avoid infinite recursive calls.
@@ -332,9 +341,10 @@ class NavOperations {
                                 return;
                             }
                             navMenu.removeItem( navMenu.getItem( checkedItemOrder ).getItemId() );
+                            Log.i("Youssef", "Delete_Item");
                             navigateToMenuItem( navMenu.getItem(0).getItemId(), navMenu.getItem(0).getTitle().toString() );
                             Toast.makeText(activity, "Successful Deletion", Toast.LENGTH_SHORT ).show();
-                            Log.i("Youssef", "After nav menu item deletion");
+                            //Log.i("Youssef", "After nav menu item deletion");
                         }
                         return;
                     case Move_Item_Up:
@@ -416,31 +426,32 @@ class NavOperations {
                 InputMethodManager imm = (InputMethodManager) activity.getSystemService(Activity.INPUT_METHOD_SERVICE);
                 //Find the currently focused view, so we can grab the correct window token from it.
                 if( imm != null) {
-                    Log.i("Youssef", "inside hideKeyboard. hiding...");
+                    //Log.i("Youssef", "inside hideKeyboard. hiding...");
                     View view = activity.getCurrentFocus();
                     //If no view currently has focus, create a new one, just so we can grab a window token from it
                     if (view == null) {
-                        Log.i("Youssef", "inside hideKeyboard. view is null");
+                        //Log.i("Youssef", "inside hideKeyboard. view is null");
                         view = activity.findViewById(R.id.editText_navheadertitle); //any edit text works actually. https://stackoverflow.com/questions/1109022/close-hide-android-soft-keyboard
                     }
                     imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
                 } else {
-                    Log.i("Youssef", "inside hideKeyboard. imm is null");
+                    //Log.i("Youssef", "inside hideKeyboard. imm is null");
                 }
             }
 
         });
 
     }
-    void navigateToMenuItem( int idOfNewMenuItem, String userInputText ) {
-        navMenu.findItem( idOfNewMenuItem ).setChecked(true);
 
+
+    
+    void navigateToMenuItem( int idOfNewMenuItem, String title ) {
         Bundle bundle = new Bundle();
-        bundle.putInt( "nav_order", activity.navOperations.getCheckedItemOrder() );
+        bundle.putInt( "nav_order", getItemOrderFromTitle( title ) ); //getCheckedItemOrder() is reliable after navController.navigate, not before, even if you did navMenu.findItem( idOfNewMenuItem ).setChecked(true); it still isn't reliable
         bundle.putInt( "bottombar_order", activity.bottomNavOperations.getCheckedItemOrder() );
         navController.navigate( idOfNewMenuItem, bundle );
 
-        activity.toolbar.setTitle( userInputText );
+        activity.toolbar.setTitle( title );
         drawer.closeDrawer(GravityCompat.START); //after this, onResume in the fragment is called. Tested. Still, it's better to make sure using a timer or something.
     }
 }

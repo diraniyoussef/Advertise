@@ -13,9 +13,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
-import androidx.navigation.Navigation;
+import androidx.lifecycle.Observer;
 
 import com.youssefdirani.navmenu_admin.MainActivity;
 import com.youssefdirani.navmenu_admin.R;
@@ -47,26 +46,26 @@ public class HomeFragment extends Fragment {
     }
     */
     private View root;
+    private String tableName;
+    private int navIndex;
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) { //we enter this between onCreate and onStart - tested
         //container is nav_host_fragment and not mobile_navigation. Tested
         activity = (MainActivity) getActivity();
 
-        int navIndex;
         int bottombarIndex;
-        String tableName;
+
         Bundle args = getArguments();
 
         if( args == null ) {
-            tableName = "Welcome and thank you for using this app.\n" +
-                    "Please wait while we fetch data from the server.";
-            Log.i("Youssef", "inside HomeFragment : no arguments");
+            tableName = "0_0";
+            Log.i("Youssef", "inside HomeFragment : no arguments. tableName is " + tableName);
         } else {
             //this is set usually inside this method navigateToMenuItem
             bottombarIndex = getArguments().getInt("bottombar_order"); //this will actually be 0 if the bottom bar was hidden
             navIndex = getArguments().getInt("nav_order");
             tableName = navIndex + "_" + bottombarIndex;
-
 
             Log.i("Youssef", "inside HomeFragment : table name is " + tableName );
             //I don't care about the id. The title determines which database table to fetch
@@ -74,7 +73,14 @@ public class HomeFragment extends Fragment {
         }
 
         root = inflater.inflate(R.layout.fragment_home, container, false);
+        activity.lastBottomNav.observe( getViewLifecycleOwner(), new Observer<String>() {
+            @Override
+            public void onChanged(@Nullable String s) {
+                tableName = navIndex + "_" + s;
 
+                Log.i("Youssef", "inside HomeFragment : (observer). table name is " + tableName );
+            }
+        });
 
         /*
         final TextView textView = root.findViewById(R.id.text_home);
