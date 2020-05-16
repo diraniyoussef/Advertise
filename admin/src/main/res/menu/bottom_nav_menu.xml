@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+    <!--for some reason, android:visible="false" doesn't work neither for the whole group, nor for a particular item.
+    I'm removing some items programmatically.
+    -->
     <group android:id="@+id/bottombar_menuitems"
         android:orderInCategory="0">
         <item

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.youssefdirani.navmenu_admin">
+    package="com.youssefdirani.advertise_admin">
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -13,7 +13,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name="com.youssefdirani.navmenu_admin.MainActivity"
+            android:name="com.youssefdirani.advertise_admin.MainActivity"
             android:label="@string/app_name"
             android:configChanges="orientation|screenSize"
             android:theme="@style/AppTheme.NoActionBar">

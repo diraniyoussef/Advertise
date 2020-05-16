@@ -7,38 +7,38 @@
 
     <fragment
         android:id="@+id/nav_home"
-        android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
+        android:name="com.youssefdirani.advertise_admin.ui.HomeFragment"
         android:tag="home fragment tag"
         android:label="@string/home_title" />
     <fragment
         android:id="@+id/nav_fragment1"
-        android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
+        android:name="com.youssefdirani.advertise_admin.ui.HomeFragment"
         android:label="@string/home_title" />
     <fragment
         android:id="@+id/nav_fragment2"
-        android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
+        android:name="com.youssefdirani.advertise_admin.ui.HomeFragment"
         android:label="@string/home_title" />
     <fragment
         android:id="@+id/nav_fragment3"
-        android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
+        android:name="com.youssefdirani.advertise_admin.ui.HomeFragment"
         android:label="@string/home_title" />
     <fragment
         android:id="@+id/nav_fragment4"
-        android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
+        android:name="com.youssefdirani.advertise_admin.ui.HomeFragment"
         android:label="@string/home_title" />
     <fragment
         android:id="@+id/nav_fragment5"
-        android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
+        android:name="com.youssefdirani.advertise_admin.ui.HomeFragment"
         android:label="@string/home_title" />
 
     <fragment
         android:id="@+id/nav_menuicon"
-        android:name="com.youssefdirani.navmenu_admin.ui.ChooseMenuIconFragment"
+        android:name="com.youssefdirani.advertise_admin.ui.ChooseMenuIconFragment"
         android:label="@string/chooseicon_title" />
     <!--tools:layout="@layout/fragment_2"-->
     <fragment
         android:id="@+id/nav_color"
-        android:name="com.youssefdirani.navmenu_admin.ui.ChooseColorFragment"
+        android:name="com.youssefdirani.advertise_admin.ui.ChooseColorFragment"
         android:label="@string/choosecolor_title" />
 
 </navigation>
