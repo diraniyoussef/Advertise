@@ -28,6 +28,7 @@ public class ChooseColorFragment extends Fragment {
             Log.i("Youssef", "inside ChooseColorFragment : no arguments");
         } else {
             indexOfNavMenuItem = getArguments().getInt("index_of_navmenuitem");
+            Log.i("Youssef", "inside ChooseColorFragment : index_of_navmenuitem is " + indexOfNavMenuItem);
             activity = (MainActivity) getActivity();
             activity.hideOptionsMenuAndBottomMenu();
             View.OnClickListener onClickListener = new View.OnClickListener() {
@@ -58,7 +59,11 @@ public class ChooseColorFragment extends Fragment {
                             activity.setTopBar3DotsColor( tag );
                             break;
                         case "bottom bar background color":
+                            Log.i("Youssef", "inside ChooseColorFragment : position 1");
                             activity.setBottomBarBackgroundColor( tag );
+                            Log.i("Youssef", "inside ChooseColorFragment : position 2");
+                            activity.setBottomBarBackgroundColorInDb( indexOfNavMenuItem, tag );
+                            Log.i("Youssef", "inside ChooseColorFragment : position 3");
                             break;
                         default:
                     }
@@ -90,7 +95,7 @@ public class ChooseColorFragment extends Fragment {
 
     @Override
     public void onResume() {
-        Log.i("Youssef", "ChooseColorFragment - inside onResume");
+        Log.i("Youssef", "inside ChooseColorFragment : inside onResume");
         super.onResume();
         //activity.onBackPressed();
     }
@@ -98,7 +103,7 @@ public class ChooseColorFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-        Log.i("Youssef", "ChooseColorFragment - inside onPause");
+        Log.i("Youssef", "inside ChooseColorFragment : inside onPause");
         //MUST RETURN SOMETHING USING onActivityResult(...); that is for technical reasons.
         //activity.onActivityResult( activity.CHOOSE_MENUICON_REQUESTCODE, RESULT_CANCELED,null );
         //activity.appearChooseNavigationIcon_MenuItem();

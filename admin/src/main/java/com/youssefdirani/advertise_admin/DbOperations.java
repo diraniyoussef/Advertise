@@ -1,10 +1,17 @@
 package com.youssefdirani.advertise_admin;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.os.Handler;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.io.File;
 import java.util.List;
@@ -22,27 +29,37 @@ class DbOperations {
         permanentDao = db_room.permanentDao();
     }
 
-/*
-    List<NavEntity> navEntityList = permanentDao.getAllNav();
-    Cursor cursor_bb_0 = db.query("SELECT * FROM bb_0");
-                    if( cursor_bb_0.getCount() == 0 && navEntityList.size() >= 1 ) {
-        ContentValues contentValues = new ContentValues();
-        contentValues.put( "title", navEntityList.get(0).title );
-        contentValues.put( "index", 0 );
-        //I feel that "icon" should be null, and it's better to be like null.
-        db.insert("bb_0", SQLiteDatabase.CONFLICT_NONE, contentValues ); //returns -1 if failure. https://developer.android.com/reference/androidx/sqlite/db/SupportSQLiteDatabase
-    }
-*/
-
     void addNavRecord( final String title ) {
         new Thread() { //opening the database needs to be on a separate thread.
             public void run() {
                 //Log.i("Youssef", "inside DbOperations : adding a nav entity.");
                 NavEntity navEntity = new NavEntity();
                 navEntity.title = title;
+                navEntity.bottombar_backgroundColorTag = "colorWhite"; //background color to white. This is my default
                 List<NavEntity> navEntityList = permanentDao.getAllNav();
                 navEntity.index = navEntityList.size(); //it's my convention to preserve throughout the app the order of indexes
-                permanentDao.insertNav(navEntity);
+                permanentDao.insertNav( navEntity );
+                setBottomBarTableAndFirstBottomNavContentTable( activity.navOperations.getCheckedItemOrder() );
+
+
+            }
+        }.start();
+    }
+    void removeNavRecord( final int index ) {
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                //Log.i("Youssef", "inside DbOperations : adding a nav entity.");
+                List<NavEntity> navEntityList = permanentDao.getAllNav();
+                NavEntity navEntity = new NavEntity();
+                for( NavEntity navEntity1 : navEntityList ) {
+                    if( navEntity1.index == index ) {
+                        navEntity = navEntity1;
+                        break;
+                    }
+                }
+                permanentDao.deleteNavEntity( navEntity );
+                deleteBbTable();
+                deleteBottomNavContentTablesButKeepUpTo(-1);
             }
         }.start();
     }
@@ -55,7 +72,84 @@ class DbOperations {
     private PermanentDao permanentDao;
     private SupportSQLiteDatabase db; //https://developer.android.com/reference/androidx/sqlite/db/SupportSQLiteDatabase
 
-    void setInitials() {
+    private String generateBbTableName( int navIndex ) {
+        return "bb_" + navIndex;
+    }
+
+    void setBottomBarTable() {
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
+                final String bottomBarTableName = generateBbTableName( activity.navOperations.getCheckedItemOrder() );
+                try {
+                    createBbTable( bottomBarTableName );
+                    db.setTransactionSuccessful(); //to commit
+                } catch(Exception e) {
+                    activity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                        }
+                    });
+                } finally {
+                    db.endTransaction();
+                }
+            }
+        }.start();
+    }
+
+    private String generateBottomNavContentTableName( int navIndex, int bottomNavIndex ) {
+        return "table" + navIndex + "_" + bottomNavIndex;
+    }
+
+    private void setBottomBarTableAndFirstBottomNavContentTable( final int navIndex ) {
+        db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
+        final String bottomBarTableName = generateBbTableName( navIndex );
+        final String firstBottomNavContentTableName = generateBottomNavContentTableName( navIndex, 0 );
+        try {
+            createBbTable( bottomBarTableName );
+            //normally we have to add 4 rows (if bb_0 table is made for the first time.) But I won't. I will keep everything to default as the first time the user (not the admin) opens the app, it will be similar to the admin's app
+            db.execSQL("CREATE TABLE IF NOT EXISTS " + firstBottomNavContentTableName + " ( " +
+                    "uid INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "type TEXT, " +
+                    "content TEXT);");
+            Log.i("fatal","after firstBottomNavContentTableName");
+            //I can't insert anything here because it's up to the user to insert either images or texts or whatever.
+            db.setTransactionSuccessful(); //to commit
+        } catch(Exception e) {
+            Log.e("fatal", "I got an error", e);
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                }
+            });
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    private void createBbTable( String bottomBarTableName ) {
+        //here we must create a table called bb_0 (which is actually bottombar of the first nav) if not yet created, and it will contain (now we will fetch) all the existing bottom bar tabs info
+        db.execSQL("CREATE TABLE IF NOT EXISTS '" + bottomBarTableName + "' ( " +
+                "uid INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "title TEXT, " +
+                "index1 INTEGER, " +//we cannot name "index" or 'index' they're reserved for some reason.
+                "icon TEXT);");
+        //adding just one item (if the table has been just created - this check is needed), which corresponds to the navIndex.
+        Cursor cursor_bb = db.query("SELECT * FROM '" + bottomBarTableName + "'");
+        if( cursor_bb.getCount() == 0 ) {
+            ContentValues contentValues = new ContentValues();
+            //contentValues.put( "uid", 0);
+            contentValues.put( "title", "Option 1");
+            contentValues.put( "index1", 0 );
+            contentValues.put( "icon", "ic_no_icon" );
+            //I guess "icon" will be null, and it's fine to be null.
+            db.insert( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues ); //returns -1 if failure. https://developer.android.com/reference/androidx/sqlite/db/SupportSQLiteDatabase
+        }
+    }
+
+    void onCreate() {
         new Thread() { //opening the database needs to be on a separate thread.
             public void run() {
                 //This is for the first time the admin uses the app
@@ -64,31 +158,10 @@ class DbOperations {
                 SupportSQLiteOpenHelper supportSQLiteOpenHelper = db_room.getOpenHelper(); //referring to the opened connection to the database. //very good explanation : https://stackoverflow.com/questions/17348480/how-do-i-prevent-sqlite-database-locks - related https://stackoverflow.com/questions/8104832/sqlite-simultaneous-reading-and-writing. And this is related as well https://www.sqlite.org/lockingv3.html
                 db = supportSQLiteOpenHelper.getWritableDatabase(); //enableWriteAheadLogging() When write-ahead logging is not enabled (the default), it is not possible for reads and writes to occur on the database at the same time. https://developer.android.com/reference/android/database/sqlite/SQLiteDatabase#create(android.database.sqlite.SQLiteDatabase.CursorFactory)
                 //It's better to make a mechanism that corrects itself in case of an error. I.e. make database tables coherent. But I will leave that for now. In case of an error, I believe the app won't crash and it will show something anyway, and for now it's up to the admin to correct whatever he wishes.
-                setBottomBar0RecordAndTable0_0();
+                setBottomBarTableAndFirstBottomNavContentTable(0);
                 //https://developer.android.com/reference/android/database/sqlite/SQLiteDatabase#execSQL(java.lang.String,%20java.lang.Object[])
-            }
-
-            private void setBottomBar0RecordAndTable0_0() {
-                db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
-                try {
-                    //here we must create a table called bb_0 (which is actually bottombar of the first nav) if not yet created, and it will contain (now we will fetch) all the existing bottom bar tabs info
-                    db.execSQL("CREATE TABLE IF NOT EXISTS bb_0 ( " +
-                            "uid INTEGER PRIMARY KEY, " +
-                            "title TEXT, " +
-                            "'index' INTEGER, " +
-                            "icon TEXT);");
-                    //normally we have to add 4 rows (if bb_0 table is made for the first time.) But I won't. I will keep everything to default as the first time the user (not the admin) opens the app, it will be similar to the admin's app
-                    db.execSQL("CREATE TABLE IF NOT EXISTS table0_0 ( " +
-                            "uid INTEGER PRIMARY KEY, " +
-                            "type TEXT, " +
-                            "content TEXT);");
-                    //we don't have an entity in table0_0 yet.
-                    db.setTransactionSuccessful(); //to commit
-                } catch(Exception e) {
-                    activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
-                } finally {
-                    db.endTransaction();
-                }
+                loadNavEntities();
+                loadBb(0, true );
             }
 
             private void insertNavEntity() {
@@ -99,9 +172,13 @@ class DbOperations {
                     NavEntity navEntity = new NavEntity();
                     navEntity.title = activity.navMenu.getItem(0).getTitle().toString();
                     navEntity.index = 0;
+                    activity.setBottomBarBackgroundColor( "colorWhite" );
+                    navEntity.bottombar_backgroundColorTag = "colorWhite";
+                    Log.i("Youssef", "before inserting the first navEntity");
                     permanentDao.insertNav( navEntity );
+                    Log.i("Youssef", "after inserting the first navEntity");
                 } else {
-                    //Log.i("Youssef", "inside MainActivity : onStart. At least a nav entity already exists.");
+                    Log.i("Youssef", "We already have an entity ??");
                     //I can't assign the UI here, not until all is inflated and so on.
                     //Now to get whether the user has a bottombar or not (for each navEntity)
                 }
@@ -119,7 +196,6 @@ class DbOperations {
                     //I can't assign the UI here, not until all is inflated and so on.
                 }
             }
-
 
         }.start(); //I'm not sequencing threads because I'm assuming that this thread is almost intantaneous
 
@@ -223,13 +299,6 @@ class DbOperations {
                 NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
                 navHeaderEntity.imagePath = imagePath;
                 permanentDao.updateNavHeader(navHeaderEntity);
-                                /*
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                    }
-                                });
-                                 */
             }
         }).start();
     }
@@ -252,16 +321,126 @@ class DbOperations {
         } ).start();
     }
 
-    public void loadNavEntities() {
+    private void loadNavEntities() {
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                activity.navOperations.updateNavItem(0, navEntityList.get(0).title, navEntityList.get(0).iconTag );
+                new Handler().postDelayed(new Runnable() {
+                    public void run() {
+                        activity.updateToolbarTitle(0);
+                    }
+                }, 100); //unfortunately needed.
+
+                //activity.navOperations.addAnItem();
+                for( int i = 1 ; i < navEntityList.size() ; i++ ) {
+                    activity.navOperations.addAnItem( navEntityList.get(i) );
+                }
+                activity.navOperations.setupNavigation();
+            }
+        });
+    }
+
+    void loadBb( final int indexOfNavMenuItem, final boolean setColor ) {
         new Thread() { //opening the database needs to be on a separate thread.
             public void run() {
-                List<NavEntity> navEntityList = permanentDao.getAllNav();
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        activity.navOperations.addAnItem();
-                    }
-                });
+                try {
+                    final List<NavEntity> navEntityList = permanentDao.getAllNav();
+                    activity.runOnUiThread( new Runnable() {
+                        @Override
+                        public void run() {
+                            new Handler().postDelayed(new Runnable() {
+                                public void run() {
+                                    final String bottombar_backgroundColorTag = navEntityList.get( indexOfNavMenuItem ).bottombar_backgroundColorTag;
+                                    if( bottombar_backgroundColorTag == null ||
+                                            !bottombar_backgroundColorTag.equalsIgnoreCase("none") ) { //my convention
+                                        activity.bottomNavigationView.setVisibility(BottomNavigationView.VISIBLE);
+                                        Log.i("Youssef", "showing bb of " + indexOfNavMenuItem);
+                                        if( bottombar_backgroundColorTag != null && setColor ) {
+                                            activity.setBottomBarBackgroundColor( bottombar_backgroundColorTag );
+                                        }
+                                    } else if( bottombar_backgroundColorTag.equalsIgnoreCase("none") ) {
+                                        activity.bottomNavigationView.setVisibility(BottomNavigationView.INVISIBLE);
+                                        Log.i("Youssef", "hiding bb of " + indexOfNavMenuItem);
+                                    }
+
+                                }
+                            }, 100); //unfortunately needed.
+
+                        }
+                    });
+                } catch ( Exception e) {
+                    Log.e("fatal", "I got an error", e);
+                }
+            }
+        }.start();
+    }
+
+    void setNameOfNavItem( final int indexOfNavMenuItem, final String name ) {
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                final List<NavEntity> navEntityList = permanentDao.getAllNav();
+                NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
+                navEntity.title = name;
+                permanentDao.updateNav( navEntity );
+            }
+        }.start();
+    }
+
+    void setBbBackgroundColorTag( final int indexOfNavMenuItem, final String bottombar_backgroundColorTag ) {
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                Log.i("Youssef", "in setBbBackgroundColorTag, of " + indexOfNavMenuItem + " to tag "
+                        + bottombar_backgroundColorTag);
+                final List<NavEntity> navEntityList = permanentDao.getAllNav();
+                Log.i("Youssef", "in setBbBackgroundColorTag. position 1");
+                NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
+                Log.i("Youssef", "in setBbBackgroundColorTag. position 2");
+                navEntity.bottombar_backgroundColorTag = bottombar_backgroundColorTag;
+                Log.i("Youssef", "in setBbBackgroundColorTag. position 3");
+                permanentDao.updateNav( navEntity );
+                Log.i("Youssef", "in setBbBackgroundColorTag, just to make sure : " +
+                        permanentDao.getAllNav().get(indexOfNavMenuItem).bottombar_backgroundColorTag );
+            }
+        }.start();
+    }
+
+    void deleteBbTable() {
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
+                final String bottomBarTableName = generateBbTableName( activity.navOperations.getCheckedItemOrder() );
+                deleteTable( bottomBarTableName );
+            }
+        }.start();
+    }
+
+    private void deleteTable( final String tableName ) {
+        db.beginTransaction();
+        try {
+            db.execSQL("DROP TABLE IF EXISTS " + tableName + ";");
+            db.setTransactionSuccessful(); //to commit
+        } catch(Exception e) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                }
+            });
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    void deleteBottomNavContentTablesButKeepUpTo( final int startIndex ) { //e.g. 0 to keep only 0 and -1 to remove all.
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                int navIndex = activity.navOperations.getCheckedItemOrder();
+                int size = activity.bottomMenu.size();
+                for( int i = size - 1 ; i > startIndex ; i-- ) {
+                    deleteTable( generateBottomNavContentTableName( navIndex, i ) );
+                }
             }
         }.start();
     }

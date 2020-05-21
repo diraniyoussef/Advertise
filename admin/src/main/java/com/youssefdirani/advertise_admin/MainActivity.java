@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
 
     DbOperations dbOperations;
     NavOperations navOperations;
-    BottomNavOperations bottomNavOperations = new BottomNavOperations( MainActivity.this );
+    BottomNavOperations bottomNavOperations;
     public MutableLiveData<String> lastBottomNav = new MutableLiveData<>();
     OptionsMenu optionsMenu;
 
@@ -102,7 +102,12 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView = findViewById( R.id.bottomnavview);
         bottomMenu = bottomNavigationView.getMenu();
         optionsMenu = new OptionsMenu( MainActivity.this, bottomMenu );
+        bottomNavOperations = new BottomNavOperations( MainActivity.this, bottomMenu );
         bottomNavOperations.setupBottomNavigation();
+
+        bottomNavOperations.keepOnly1Item();
+        dbOperations.onCreate(); //setting initial stuff if not yet set, and loading from tables all relevant data.
+
     }
 
     //Called when the user presses on the stack navigation icon in order to navigate https://developer.android.com/reference/android/support/v7/app/AppCompatActivity#onSupportNavigateUp()
@@ -120,12 +125,13 @@ public class MainActivity extends AppCompatActivity {
 
     public void showOptionsMenuAndBottomMenu( int indexOfNavMenuItem ) {
         toolbar.getMenu().setGroupVisible( R.id.optionsmenu_actionitemgroup,true );
-
-        //we need to get it from the database to know whether  to show it or not.
-        bottomNavigationView.setVisibility( BottomNavigationView.VISIBLE );
-
+        dbOperations.loadBb( indexOfNavMenuItem, false ); //we need to get it from the database to know whether  to show it or not.
     }
 
+    public void updateToolbarTitle( int indexOfNewMenuItem ) {
+        //Log.i("Youssef", "updateToolbarTitle to " + navMenu.getItem( indexOfNewMenuItem ).getTitle() );
+        toolbar.setTitle( navMenu.getItem( indexOfNewMenuItem ).getTitle().toString() );
+    }
 
     void toast( String textToToast, int duration ) {
         Toast.makeText(MainActivity.this, textToToast, duration).show();
@@ -135,10 +141,8 @@ public class MainActivity extends AppCompatActivity {
     public void onStart() {
         super.onStart();
         Log.i("Youssef", "inside MainActivity : onStart");
-        //dbOperations
-        bottomNavOperations.showOnly1Item();
-        dbOperations.setInitials();
-        dbOperations.loadNavEntities();
+
+
     }
     @Override
     protected void onResume() {
@@ -183,31 +187,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void setIconOfCheckedMenuItem( String tag, int nav_menuitem_index, String menu ) {
-        //since getCheckedItemOrder() when called from ChooseNavMenuIconFragment can't know the index (order), so we're using nav_menuitem_index
-        ////Log.i("seticon", "item index is " + getCheckedItemOrder());
-        if( tag.equalsIgnoreCase("ic_no_icon") ) {
-            if( menu.equals("nav menu") ) {
-                MenuItem menuItem = navMenu.getItem( nav_menuitem_index );
-                menuItem.setIcon(0);
-            } else if( menu.equals("bottom nav menu") ) {
-                //it's good that the bottom bar still remembers the checked item order after returning back from ChooseNavMenuIconFragment. Here we won't be using nav_menuitem_index, it's been useful for the toolbar
-                int bottomNavIndex = bottomNavOperations.getCheckedItemOrder();
-                MenuItem menuItem = bottomMenu.getItem( bottomNavIndex );
-                menuItem.setIcon(0);
-            }
-            return;
-        }
-        int icon_drawable_id = getResources().getIdentifier( tag, "drawable", getPackageName() );
-        Drawable icon = getResources().getDrawable( icon_drawable_id );
         if( menu.equals("nav menu") ) {
-            navMenu.getItem( nav_menuitem_index ).setIcon( icon );
+            navOperations.setIconOfCheckedMenuItem( tag, nav_menuitem_index);
         } else if( menu.equals("bottom nav menu") ) {
-            bottomMenu.getItem( bottomNavOperations.getCheckedItemOrder() ).setIcon( icon ); //it's good that the bottom bar still remembers the checked item order after returning back from ChooseNavMenuIconFragment
+            bottomNavOperations.setIconOfCheckedMenuItem( tag, bottomNavOperations.getCheckedItemOrder() );
         }
-    }
-
-    public void updateToolbarTitle( int indexOfNewMenuItem ) {
-        toolbar.setTitle( navMenu.getItem( indexOfNewMenuItem ).getTitle() );
     }
 
     @Override
@@ -252,6 +236,10 @@ public class MainActivity extends AppCompatActivity {
     public void setBottomBarBackgroundColor( String tag ) {
         int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
         bottomNavigationView.setBackgroundColor( ContextCompat.getColor(this, color_id) );
+    }
+    public void setBottomBarBackgroundColorInDb( int navIndex, String tag ) {
+        Log.i("Youssef", "Setting BB background color of " + navIndex  + " to " + tag);
+        dbOperations.setBbBackgroundColorTag( navIndex, tag );
     }
 
     //Related to the navigation menu. Used to retrieve the image from gallery and save it

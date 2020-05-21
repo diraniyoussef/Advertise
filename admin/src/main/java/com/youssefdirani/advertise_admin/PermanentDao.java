@@ -3,6 +3,7 @@ package com.youssefdirani.advertise_admin;
 import java.util.List;
 
 import androidx.room.Dao;
+import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
 import androidx.room.Update;
@@ -55,4 +56,7 @@ public interface PermanentDao { //Dao is Data Access Object
 
     @Update
     void updateNav( NavEntity navEntity );
+
+    @Delete
+    void deleteNavEntity(NavEntity navEntity);
 }

@@ -21,6 +21,7 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 
 import java.io.File;
@@ -76,7 +77,7 @@ class NavOperations {
     private final int[] FragmentId = { R.id.nav_home, R.id.nav_fragment1, R.id.nav_fragment2, R.id.nav_fragment3,
             R.id.nav_fragment4, R.id.nav_fragment5 };
 
-    private void setupNavigation() {
+    void setupNavigation() {
         final int size = getNavMenuItemsCount();
         int[] itemsId = new int[ size ];
         for( int i = 0; i < size; i++ ) {
@@ -173,7 +174,7 @@ class NavOperations {
     }
 
     //Related to the navigation menu. Used to rename the checked navigation menu item
-    void rename_AlertDialog( MenuItem selectedMenuItem ) {
+    private void rename_AlertDialog( MenuItem selectedMenuItem ) {
         final MenuItem menuItem = selectedMenuItem;
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         builder.setTitle("Renaming");
@@ -194,6 +195,7 @@ class NavOperations {
                 }
                 menuItem.setTitle( userInputText );
                 toolbar.setTitle(userInputText); //necessary. Another way (probably) is to change the label of the corresponding fragment.
+                activity.dbOperations.setNameOfNavItem( getCheckedItemOrder(), userInputText );
             }
         });
 
@@ -206,7 +208,6 @@ class NavOperations {
 
         builder.show();
     }
-
 
     private void createMenuItem_AlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
@@ -234,28 +235,11 @@ class NavOperations {
                 addNavMenuItem( id,navMenu.getItem(getNavMenuItemsCount() - 1).getOrder() + 1,
                         userInputText );
                 Log.i("Youssef", "createMenuItem where title is " + userInputText);
-                navigateToMenuItem( id, userInputText ); //inside this we have we setChecked to true
                 activity.dbOperations.addNavRecord( userInputText );
+                activity.bottomNavOperations.setDefault();
+                navigateToMenuItem( id, userInputText ); //inside this we have we setChecked to true
                 Toast.makeText(activity, "Navigation menu item is successfully added.",
                         Toast.LENGTH_LONG).show();
-            }
-
-            private int getAFreeId() { //that has not been used in any of the menu items
-                final int size;
-                size = getNavMenuItemsCount();
-                for (int fragmentId : FragmentId) {
-                    ////Log.i("getAFreeId", "FragmentId[j] " + fragmentId );
-                    int i;
-                    for (i = 0; i < size; i++) {
-                        if( navMenu.getItem(i).getItemId() == fragmentId ) {
-                            break;
-                        }
-                    }
-                    if (i == size) { //id not used
-                        return fragmentId;
-                    }
-                }
-                return 0; //should not be reached
             }
         });
 
@@ -267,6 +251,24 @@ class NavOperations {
         });
 
         builder.show();
+    }
+
+    private int getAFreeId() { //that has not been used in any of the menu items
+        final int size;
+        size = getNavMenuItemsCount();
+        for (int fragmentId : FragmentId) {
+            ////Log.i("getAFreeId", "FragmentId[j] " + fragmentId );
+            int i;
+            for (i = 0; i < size; i++) {
+                if( navMenu.getItem(i).getItemId() == fragmentId ) {
+                    break;
+                }
+            }
+            if (i == size) { //id not used
+                return fragmentId;
+            }
+        }
+        return 0; //should not be reached
     }
 
     private boolean isUserInputTextNotFine( @org.jetbrains.annotations.NotNull String userInputText ) {
@@ -388,7 +390,7 @@ class NavOperations {
         }
     }
 
-    void addNavMenuItem( int id, int order, String title ) {
+    private void addNavMenuItem( int id, int order, String title ) {
         final MenuItem createdMenuItem = navMenu.add( R.id.main_drawer_group, id,
                 order, title ); //the order is in coherence with orderInCategory inside activity_main_drawer.xml. It may get larger than getMenuItemsCount(), this is because we delete items without fixing the order then when we may add again a new menu item.
         final int checkedItemOrder = getCheckedItemOrder();
@@ -398,7 +400,7 @@ class NavOperations {
         //Log.i("Youssef", "order of newly created item is " + createdMenuItem.getOrder() );
         createdMenuItem.setChecked(true);
         setupNavigation(); //making it top-level (root) destination.
-        activity.toolbar.setTitle( title );
+        toolbar.setTitle( title );
     }
 
     //Related to the navigation menu. Used to know the checked navigation menu item. It's really needed, especially for onNavigationItemSelected
@@ -421,7 +423,7 @@ class NavOperations {
         }
         return -1;
     }
-    int getNavMenuItemsCount() { //will always be menu.size() - 1, according to the structure of activity_main_drawer.xml file
+    private int getNavMenuItemsCount() { //will always be menu.size() - 1, according to the structure of activity_main_drawer.xml file
         int count = 0;
         //Log.i("Youssef", "menu size is " + navMenu.size() );
         for( int i = 0; i < navMenu.size(); i++ ) { //going till i < menu.size() - 1 is also fine, but anyway.
@@ -473,6 +475,7 @@ class NavOperations {
                                 return;
                             }
                             navMenu.removeItem( navMenu.getItem( checkedItemOrder ).getItemId() );
+                            activity.dbOperations.removeNavRecord( checkedItemOrder );
                             Log.i("Youssef", "Delete_Item");
                             navigateToMenuItem( navMenu.getItem(0).getItemId(), navMenu.getItem(0).getTitle().toString() );
                             Toast.makeText(activity, "Successful Deletion", Toast.LENGTH_SHORT ).show();
@@ -572,26 +575,48 @@ class NavOperations {
         });
 
     }
-
-/*
-        int id = getAFreeId( FragmentId, true, navMenu );
-        navOperations.addNavMenuItem( id,
-                navMenu.getItem(navOperations.getNavMenuItemsCount() - 1).getOrder() + 1,
-                userInputText );
-         */
     
-    void navigateToMenuItem( int idOfNewMenuItem, String title ) {
+    void navigateToMenuItem( int idOfNewMenuItem, String title ) { //to navigate to menu items, not to fragments related to background color or icon choice.
         Bundle bundle = new Bundle();
         bundle.putInt( "nav_order", getItemOrderFromTitle( title ) ); //getCheckedItemOrder() is reliable after navController.navigate, not before, even if you did navMenu.findItem( idOfNewMenuItem ).setChecked(true); it still isn't reliable
         bundle.putInt( "bottombar_order", activity.bottomNavOperations.getCheckedItemOrder() );
-        navController.navigate( idOfNewMenuItem, bundle );
-
-        activity.toolbar.setTitle( title );
+        navigateToMenuItem( idOfNewMenuItem, bundle );
+        Log.i("Youssef", "changing toolbar title in navigateToMenuItem to " + title);
+        toolbar.setTitle( title );
         drawer.closeDrawer(GravityCompat.START); //after this, onResume in the fragment is called. Tested. Still, it's better to make sure using a timer or something.
     }
 
-    public void addAnItem() {
-        final MenuItem createdMenuItem = navMenu.add( R.id.main_drawer_group, R.id.nav_fragment1,
-                3, "title" ); //the order is in coherence with orderInCategory inside activity_main_drawer.xml. It may get larger than getMenuItemsCount(), this is because we delete items without fixing the order then when we may add again a new menu item.
+    private void navigateToMenuItem( int idOfNewMenuItem, Bundle bundle ) {
+        navController.navigate( idOfNewMenuItem, bundle );
+        activity.dbOperations.loadBb(
+                getItemOrderFromTitle(navMenu.findItem(idOfNewMenuItem).getTitle().toString()), true);
     }
+
+    void setIconOfCheckedMenuItem( String tag, int nav_menuitem_index ) {
+        if( tag == null ) {
+            return;
+        }
+        if( tag.equalsIgnoreCase("ic_no_icon") ) {
+            MenuItem menuItem = navMenu.getItem( nav_menuitem_index );
+            menuItem.setIcon(0);
+            return;
+        }
+        int icon_drawable_id = activity.getResources().getIdentifier( tag, "drawable", activity.getPackageName() );
+        Drawable icon = activity.getResources().getDrawable( icon_drawable_id );
+        navMenu.getItem( nav_menuitem_index ).setIcon( icon );
+    }
+
+    void addAnItem( NavEntity navEntity ) { //navMenu.getItem( navOperations.getNavMenuItemsCount() - 1 ).getOrder() + 1
+        navMenu.add( R.id.main_drawer_group, getAFreeId(),navMenu.size() + 1, navEntity.title );
+        setIconOfCheckedMenuItem( navEntity.iconTag,navMenu.size() - 1 );
+    }
+
+    void updateNavItem( int navIndex, String title, String iconTag ) { //useful to update either the title or the icon
+        if( title != null && !title.equalsIgnoreCase("") ) {
+            navMenu.getItem(navIndex).setTitle(title);
+            Log.i("Youssef", "Title is updated to " + title);
+        }
+        setIconOfCheckedMenuItem( iconTag, navIndex );
+    }
+
 }

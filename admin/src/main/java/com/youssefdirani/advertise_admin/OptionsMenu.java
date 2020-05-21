@@ -91,12 +91,18 @@ class OptionsMenu {
                 }
                 return true;
             case R.id.bottombar_add:
-                activity.bottomNavigationView.setVisibility( BottomNavigationView.VISIBLE );
-                bottomMenu.getItem(0).setChecked(true); //this is my convention
+                activity.bottomNavOperations.setDefault();
+                activity.setBottomBarBackgroundColorInDb( activity.navOperations.getCheckedItemOrder(),
+                        "colorWhite" );
+                activity.dbOperations.setBottomBarTable();
                 return true;
             case R.id.bottombar_remove:
-                bottomMenu.getItem(0).setChecked(true); //this is my convention. It is useful when a user navigates to a navigation menu item (because we use getCheckedItemOrder_ofBottomBar() for the table name)
                 activity.bottomNavigationView.setVisibility( BottomNavigationView.INVISIBLE );
+                //the following are the 3 things that relate to bottombar in the database
+                activity.setBottomBarBackgroundColorInDb( activity.navOperations.getCheckedItemOrder(),
+                        "none" ); //this is correlated to loadBb in DbOperations in my convention, so it's important.
+                activity.dbOperations.deleteBbTable();
+                activity.dbOperations.deleteBottomNavContentTablesButKeepUpTo(0);
                 return true;
             case R.id.bottombar_color:
                 bundle = new Bundle();
@@ -208,8 +214,7 @@ class OptionsMenu {
         }
     }
 
-    void rename_AlertDialog( MenuItem selectedMenuItem ) {
-        final MenuItem menuItem = selectedMenuItem;
+    private void rename_AlertDialog( final MenuItem selectedMenuItem ) {
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         builder.setTitle("Renaming");
 
@@ -227,7 +232,7 @@ class OptionsMenu {
                 if( isUserInputTextNotFine( userInputText ) ) {
                     return;
                 }
-                menuItem.setTitle( userInputText );
+                selectedMenuItem.setTitle( userInputText );
             }
         });
 
