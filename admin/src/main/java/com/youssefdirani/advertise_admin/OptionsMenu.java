@@ -91,18 +91,11 @@ class OptionsMenu {
                 }
                 return true;
             case R.id.bottombar_add:
-                activity.bottomNavOperations.setDefault();
-                activity.setBottomBarBackgroundColorInDb( activity.navOperations.getCheckedItemOrder(),
-                        "colorWhite" );
-                activity.dbOperations.setBottomBarTable();
+                activity.onBB_Add();
                 return true;
             case R.id.bottombar_remove:
-                activity.bottomNavigationView.setVisibility( BottomNavigationView.INVISIBLE );
                 //the following are the 3 things that relate to bottombar in the database
-                activity.setBottomBarBackgroundColorInDb( activity.navOperations.getCheckedItemOrder(),
-                        "none" ); //this is correlated to loadBb in DbOperations in my convention, so it's important.
-                activity.dbOperations.deleteBbTable();
-                activity.dbOperations.deleteBottomNavContentTablesButKeepUpTo(0);
+                activity.onBottomBarRemove();
                 return true;
             case R.id.bottombar_color:
                 bundle = new Bundle();

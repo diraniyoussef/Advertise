@@ -43,6 +43,7 @@ public class ChooseMenuIconFragment extends Fragment {
                     switch( action ) {
                         case "navigation menu icon":
                             activity.setIconOfCheckedMenuItem( tag, indexOfNavMenuItem, "nav menu");
+                            //activity.setIconOfNavMenuItemInDb( indexOfNavMenuItem, tag );
                             break;
                         case "bottom bar menu item":
                             activity.setIconOfCheckedMenuItem( tag, indexOfNavMenuItem, "bottom nav menu");

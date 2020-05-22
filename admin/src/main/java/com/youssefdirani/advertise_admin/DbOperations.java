@@ -57,9 +57,25 @@ class DbOperations {
                         break;
                     }
                 }
+                concatenateNavTableIndices( index ); //fixing the index of the records in nav table
+                Log.i("Youssef", "before deleting from database");
                 permanentDao.deleteNavEntity( navEntity );
+                Log.i("Youssef", "after deleting from database");
                 deleteBbTable();
                 deleteBottomNavContentTablesButKeepUpTo(-1);
+            }
+            void concatenateNavTableIndices( int startingIndex ) {//should be called whenever an entity is deleted (except for the last entity).
+                //finally it's ok to have e.g. 4 elements like the following indices 0 3 1 2
+                List<NavEntity> navEntityList = permanentDao.getAllNav();
+                if( startingIndex < navEntityList.size() ) { //startingIndex is passed such that it corresponds for the just deleted element
+                    Log.i("Youssef", "concatenateNavTableIndices. size of navEntityList = " + navEntityList.size());
+                    for( int i = startingIndex ; i < navEntityList.size() - 1 ; i++ ) {
+                        Log.i("Youssef", "concatenateNavTableIndices. i = " + i);
+                        NavEntity navEntity = permanentDao.getNav(i + 1 );
+                        navEntity.index = i;
+                        permanentDao.updateNav( navEntity );
+                    }
+                }
             }
         }.start();
     }
@@ -77,25 +93,21 @@ class DbOperations {
     }
 
     void setBottomBarTable() {
-        new Thread() { //opening the database needs to be on a separate thread.
-            public void run() {
-                db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
-                final String bottomBarTableName = generateBbTableName( activity.navOperations.getCheckedItemOrder() );
-                try {
-                    createBbTable( bottomBarTableName );
-                    db.setTransactionSuccessful(); //to commit
-                } catch(Exception e) {
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
-                        }
-                    });
-                } finally {
-                    db.endTransaction();
+        db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
+        final String bottomBarTableName = generateBbTableName( activity.navOperations.getCheckedItemOrder() );
+        try {
+            createBbTable( bottomBarTableName );
+            db.setTransactionSuccessful(); //to commit
+        } catch(Exception e) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
                 }
-            }
-        }.start();
+            });
+        } finally {
+            db.endTransaction();
+        }
     }
 
     private String generateBottomNavContentTableName( int navIndex, int bottomNavIndex ) {
@@ -199,19 +211,6 @@ class DbOperations {
 
         }.start(); //I'm not sequencing threads because I'm assuming that this thread is almost intantaneous
 
-    }
-
-    void concatenateNavTableIndices( int startingIndex ) {//should be called whenever an entity is deleted (except for the last entity).
-        //finally it's ok to have e.g. 4 elements like the following indices 0 3 1 2
-        List<NavEntity> navEntityList = permanentDao.getAllNav();
-        if( startingIndex < navEntityList.size() ) { //startingIndex is passed such that it corresponds for the just deleted element
-            for( int i = startingIndex ; i < navEntityList.size() ; i++ ) {
-                //Log.i("Youssef", "inside MainActivity : concatenateNavTableIndices");
-                NavEntity navEntity = permanentDao.getNav(i + 1 );
-                navEntity.index = i;
-                permanentDao.updateNav( navEntity );
-            }
-        }
     }
 
     void saveNavHeaderBackgroundColor( final String tag ) {
@@ -389,37 +388,40 @@ class DbOperations {
     }
 
     void setBbBackgroundColorTag( final int indexOfNavMenuItem, final String bottombar_backgroundColorTag ) {
-        new Thread() { //opening the database needs to be on a separate thread.
-            public void run() {
-                Log.i("Youssef", "in setBbBackgroundColorTag, of " + indexOfNavMenuItem + " to tag "
-                        + bottombar_backgroundColorTag);
-                final List<NavEntity> navEntityList = permanentDao.getAllNav();
-                Log.i("Youssef", "in setBbBackgroundColorTag. position 1");
-                NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
-                Log.i("Youssef", "in setBbBackgroundColorTag. position 2");
-                navEntity.bottombar_backgroundColorTag = bottombar_backgroundColorTag;
-                Log.i("Youssef", "in setBbBackgroundColorTag. position 3");
-                permanentDao.updateNav( navEntity );
-                Log.i("Youssef", "in setBbBackgroundColorTag, just to make sure : " +
-                        permanentDao.getAllNav().get(indexOfNavMenuItem).bottombar_backgroundColorTag );
-            }
-        }.start();
+        Log.i("Youssef", "in setBbBackgroundColorTag, of " + indexOfNavMenuItem + " to tag "
+                + bottombar_backgroundColorTag);
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        Log.i("Youssef", "in setBbBackgroundColorTag. position 1");
+        NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
+        Log.i("Youssef", "in setBbBackgroundColorTag. position 2");
+        navEntity.bottombar_backgroundColorTag = bottombar_backgroundColorTag;
+        Log.i("Youssef", "in setBbBackgroundColorTag. position 3");
+        permanentDao.updateNav( navEntity ); //this might cause sometimes a silent error, such that the statements after it don't work
+        Log.i("Youssef", "in setBbBackgroundColorTag, just to make sure : " +
+                permanentDao.getAllNav().get(indexOfNavMenuItem).bottombar_backgroundColorTag );
     }
 
     void deleteBbTable() {
-        new Thread() { //opening the database needs to be on a separate thread.
-            public void run() {
-                db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
-                final String bottomBarTableName = generateBbTableName( activity.navOperations.getCheckedItemOrder() );
-                deleteTable( bottomBarTableName );
-            }
-        }.start();
+        Log.i("Youssef", "in deleteBbTable");
+        final String bottomBarTableName = generateBbTableName( activity.navOperations.getCheckedItemOrder() );
+        Log.i("Youssef", "in deleteBbTable");
+        deleteTable( bottomBarTableName );
+    }
+
+    void deleteBottomNavContentTablesButKeepUpTo( final int startIndex ) { //e.g. 0 to keep only 0 and -1 to remove all.
+        int navIndex = activity.navOperations.getCheckedItemOrder();
+        int size = activity.bottomMenu.size();
+        for( int i = size - 1 ; i > startIndex ; i-- ) {
+            deleteTable( generateBottomNavContentTableName( navIndex, i ) );
+        }
     }
 
     private void deleteTable( final String tableName ) {
-        db.beginTransaction();
+        db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
         try {
+            Log.i("Youssef", "before deleting table " + tableName );
             db.execSQL("DROP TABLE IF EXISTS " + tableName + ";");
+            Log.i("Youssef", "after deleting table " + tableName );
             db.setTransactionSuccessful(); //to commit
         } catch(Exception e) {
             activity.runOnUiThread(new Runnable() {
@@ -431,17 +433,5 @@ class DbOperations {
         } finally {
             db.endTransaction();
         }
-    }
-
-    void deleteBottomNavContentTablesButKeepUpTo( final int startIndex ) { //e.g. 0 to keep only 0 and -1 to remove all.
-        new Thread() { //opening the database needs to be on a separate thread.
-            public void run() {
-                int navIndex = activity.navOperations.getCheckedItemOrder();
-                int size = activity.bottomMenu.size();
-                for( int i = size - 1 ; i > startIndex ; i-- ) {
-                    deleteTable( generateBottomNavContentTableName( navIndex, i ) );
-                }
-            }
-        }.start();
     }
 }

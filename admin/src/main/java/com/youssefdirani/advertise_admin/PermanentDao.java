@@ -48,7 +48,7 @@ public interface PermanentDao { //Dao is Data Access Object
     @Insert
     void insertNav(NavEntity navEntity);
 
-    @Query( "SELECT * FROM nav WHERE 'index' LIKE :index LIMIT 1" )
+    @Query( "SELECT * FROM nav WHERE index1 LIKE :index LIMIT 1" )
     NavEntity getNav( int index );
 
     @Query( "SELECT * FROM nav" )

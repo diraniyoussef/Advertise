@@ -160,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
     public void onStop() {
         super.onStop();
         Log.i("Youssef", "inside MainActivity : onStop");
-        //dbOperations.onStop();
+        dbOperations.onStop();
     }
     @Override
     public void onDestroy() {
@@ -237,9 +237,13 @@ public class MainActivity extends AppCompatActivity {
         int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
         bottomNavigationView.setBackgroundColor( ContextCompat.getColor(this, color_id) );
     }
-    public void setBottomBarBackgroundColorInDb( int navIndex, String tag ) {
-        Log.i("Youssef", "Setting BB background color of " + navIndex  + " to " + tag);
-        dbOperations.setBbBackgroundColorTag( navIndex, tag );
+    public void setBottomBarBackgroundColorInDb( final int navIndex, final String tag ) {
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                Log.i("Youssef", "Setting BB background color of " + navIndex  + " to " + tag);
+                dbOperations.setBbBackgroundColorTag( navIndex, tag );
+            }
+        }.start();
     }
 
     //Related to the navigation menu. Used to retrieve the image from gallery and save it
@@ -255,6 +259,29 @@ public class MainActivity extends AppCompatActivity {
             finish();
         }
         super.onBackPressed();  // optional depending on your needs
+    }
+
+    void onBottomBarRemove() {
+        bottomNavigationView.setVisibility( BottomNavigationView.INVISIBLE );
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                dbOperations.setBbBackgroundColorTag( navOperations.getCheckedItemOrder(),
+                        "none" ); //this is correlated to loadBb in DbOperations in my convention, so it's important.
+                dbOperations.deleteBbTable();
+                dbOperations.deleteBottomNavContentTablesButKeepUpTo(0);
+            }
+        }.start();
+    }
+
+    public void onBB_Add() {
+        bottomNavOperations.setDefault();
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                dbOperations.setBbBackgroundColorTag( navOperations.getCheckedItemOrder(),
+                        "colorWhite" );
+                dbOperations.setBottomBarTable();
+            }
+        }.start();
     }
 
 }

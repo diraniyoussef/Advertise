@@ -10,7 +10,7 @@ class NavEntity {
     @PrimaryKey  (autoGenerate = true)// is same as autoincrement.
     int uid = 0;
 
-    @ColumnInfo(name = "index")
+    @ColumnInfo(name = "index1") //I named "order" because "index" might cause trouble.
     int index; //may be needed for it to be auto-incremented
 
     @ColumnInfo(name = "title")
