@@ -1,18 +1,13 @@
 package com.youssefdirani.advertise_admin;
 
-import android.app.AlertDialog;
 import android.content.ComponentCallbacks2;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -123,9 +118,13 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setVisibility( BottomNavigationView.INVISIBLE );
     }
 
-    public void showOptionsMenuAndBottomMenu( int indexOfNavMenuItem ) {
+    public void showOptionsMenuAndBottomMenu( final int indexOfNavMenuItem ) {
         toolbar.getMenu().setGroupVisible( R.id.optionsmenu_actionitemgroup,true );
-        dbOperations.loadBb( indexOfNavMenuItem, false ); //we need to get it from the database to know whether  to show it or not.
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                dbOperations.loadBb( indexOfNavMenuItem, false ); //we need to get it from the database to know whether  to show it or not.
+            }
+        }.start();
     }
 
     public void updateToolbarTitle( int indexOfNewMenuItem ) {
@@ -160,11 +159,11 @@ public class MainActivity extends AppCompatActivity {
     public void onStop() {
         super.onStop();
         Log.i("Youssef", "inside MainActivity : onStop");
-        dbOperations.onStop();
     }
     @Override
     public void onDestroy() {
         super.onDestroy();
+        dbOperations.onDestroy();
         Log.i("Youssef", "inside MainActivity : onDestroy");
     }
 
@@ -174,21 +173,22 @@ public class MainActivity extends AppCompatActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);//this should be before adding menus maybe. findItem https://stackoverflow.com/questions/16500415/findviewbyid-for-menuitem-returns-null (and using menu.findItem may be better than findViewById ?, not sure)
         Log.i("Youssef", "MainActivity - inside onCreateOptionsMenu");
-
+        navOperations.setNavHeader();
         return true;
-    }
-
-    public void setFirstOptionsMenuIcon() { //for technical reasons - weird - it's ChooseMenuIconFragment the reason.
-        optionsMenu.setFirstOptionsMenuIcon();
     }
 
     public void setLayoutColor( int linearlayout_id, final String tag ) {
         navOperations.setLayoutColor( linearlayout_id, tag );
     }
 
-    public void setIconOfCheckedMenuItem( String tag, int nav_menuitem_index, String menu ) {
+    public void setIconOfCheckedMenuItem( final String tag, final int nav_menuitem_index, String menu ) {
         if( menu.equals("nav menu") ) {
             navOperations.setIconOfCheckedMenuItem( tag, nav_menuitem_index);
+            new Thread() { //opening the database needs to be on a separate thread.
+                public void run() {
+                    dbOperations.setIconOfCheckedNavMenuItem( tag, nav_menuitem_index );
+                }
+            }.start();
         } else if( menu.equals("bottom nav menu") ) {
             bottomNavOperations.setIconOfCheckedMenuItem( tag, bottomNavOperations.getCheckedItemOrder() );
         }

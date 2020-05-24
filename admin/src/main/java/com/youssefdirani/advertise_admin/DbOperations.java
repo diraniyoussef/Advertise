@@ -14,6 +14,7 @@ import android.widget.Toast;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import androidx.room.Room;
@@ -45,22 +46,29 @@ class DbOperations {
             }
         }.start();
     }
+/*
+    private void findNavEntityByIndex( NavEntity navEntity, final int index ) { //usually when we call it we know it'll return an actual
+        List<NavEntity> navEntityList = permanentDao.getAllNav();
+        for( NavEntity navEntity1 : navEntityList ) {
+            if( navEntity1.index == index ) {
+                navEntity = navEntity1;
+                return;
+            }
+        }
+        navEntity = null;
+    }
+ */
+
     void removeNavRecord( final int index ) {
         new Thread() { //opening the database needs to be on a separate thread.
             public void run() {
                 //Log.i("Youssef", "inside DbOperations : adding a nav entity.");
                 List<NavEntity> navEntityList = permanentDao.getAllNav();
-                NavEntity navEntity = new NavEntity();
-                for( NavEntity navEntity1 : navEntityList ) {
-                    if( navEntity1.index == index ) {
-                        navEntity = navEntity1;
-                        break;
-                    }
-                }
+                NavEntity navEntity = navEntityList.get( index );
                 concatenateNavTableIndices( index ); //fixing the index of the records in nav table
-                Log.i("Youssef", "before deleting from database");
+                Log.i("Youssef", "before deleting nav entity from database");
                 permanentDao.deleteNavEntity( navEntity );
-                Log.i("Youssef", "after deleting from database");
+                Log.i("Youssef", "after deleting nav entity from database");
                 deleteBbTable();
                 deleteBottomNavContentTablesButKeepUpTo(-1);
             }
@@ -80,8 +88,8 @@ class DbOperations {
         }.start();
     }
 
-    void onStop() {
-        db_room.close();
+    void onDestroy() {
+        db_room.close(); //should not be called onStop, otherwise when we go the activity of choosing an image from gallery, this will be called and this hurts the consistency of the app.
     }
 
     private AppDatabase db_room;
@@ -161,6 +169,12 @@ class DbOperations {
         }
     }
 
+    void setOnNavigate( final int navIndex ) { //have to load everything
+        loadBb( navIndex, true );
+
+
+    }
+
     void onCreate() {
         new Thread() { //opening the database needs to be on a separate thread.
             public void run() {
@@ -173,7 +187,7 @@ class DbOperations {
                 setBottomBarTableAndFirstBottomNavContentTable(0);
                 //https://developer.android.com/reference/android/database/sqlite/SQLiteDatabase#execSQL(java.lang.String,%20java.lang.Object[])
                 loadNavEntities();
-                loadBb(0, true );
+                setOnNavigate(0);
             }
 
             private void insertNavEntity() {
@@ -184,8 +198,16 @@ class DbOperations {
                     NavEntity navEntity = new NavEntity();
                     navEntity.title = activity.navMenu.getItem(0).getTitle().toString();
                     navEntity.index = 0;
-                    activity.setBottomBarBackgroundColor( "colorWhite" );
                     navEntity.bottombar_backgroundColorTag = "colorWhite";
+                    activity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            activity.setBottomBarBackgroundColor( "colorWhite" );
+                            activity.navOperations.setIconOfCheckedMenuItem( "ic_action_home", 0);
+                            activity.optionsMenu.setFirstOptionsMenuIcon();
+                        }
+                    });
+                    navEntity.iconTag = "ic_action_home";
                     Log.i("Youssef", "before inserting the first navEntity");
                     permanentDao.insertNav( navEntity );
                     Log.i("Youssef", "after inserting the first navEntity");
@@ -213,113 +235,6 @@ class DbOperations {
 
     }
 
-    void saveNavHeaderBackgroundColor( final String tag ) {
-        ( new Thread() { //opening the database needs to be on a separate thread.
-            public void run() {
-                NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
-                //Log.i("Youssef", "Saving nav host background onto the database");
-                navHeaderEntity.backgroundColor = tag;
-                permanentDao.updateNavHeader(navHeaderEntity);
-            }
-        } ).start();
-
-    }
-
-    void loadNavHeaderBackgroundColor() {
-        ( new Thread() { //opening the database needs to be on a separate thread.
-            public void run() {
-                NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
-                //Log.i("Youssef", "Loading nav host background color from the database");
-                final String backgroundColorTag = navHeaderEntity.backgroundColor;
-                if( backgroundColorTag != null && !backgroundColorTag.equals("") ) {
-                    final LinearLayout linearLayout = activity.findViewById(R.id.linearlayout_navheader);
-                    final int color_id = activity.getResources().getIdentifier( backgroundColorTag,
-                            "color", activity.getPackageName() );
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            linearLayout.setBackgroundColor( activity.getResources().getColor( color_id ) );
-                        }
-                    });
-                }
-            }
-        } ).start();
-    }
-
-    void saveHeaderTitles( final EditText editText, final EditText editText_navHeaderTitle,
-                                  final EditText editText_navHeaderSubtitle) {
-        ( new Thread() { //opening the database needs to be on a separate thread.
-            public void run() {
-                NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
-                if( editText.equals( editText_navHeaderTitle )) {
-                    ////Log.i("Youssef", "edittext header title has lost focus");
-                    navHeaderEntity.title = editText.getText().toString();
-                    permanentDao.updateNavHeader( navHeaderEntity );
-                }
-                if( editText.equals( editText_navHeaderSubtitle )) {
-                    ////Log.i("Youssef", "edittext header subtitle has lost focus");
-                    navHeaderEntity.subtitle = editText.getText().toString();
-                    permanentDao.updateNavHeader( navHeaderEntity );
-                }
-            }
-        }).start();
-    }
-
-    void loadHeaderTitles( final EditText editText_navHeaderTitle, final EditText editText_navHeaderSubtitle ) {
-        ( new Thread() { //opening the database needs to be on a separate thread.
-            public void run() {
-                final String navHeaderTitle = permanentDao.getNavHeader().title; //interesting how the compiler does not complain for an NPE
-                if( navHeaderTitle != null && !navHeaderTitle.equals("") ) {
-                    //Log.i("Youssef", "navHeaderTitle is " + navHeaderTitle);
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            editText_navHeaderTitle.setText( navHeaderTitle );
-                        }
-                    });
-                }
-                final String navHeaderSubTitle = permanentDao.getNavHeader().subtitle; //interesting how the compiler does not complain for an NPE
-                if( navHeaderSubTitle != null && !navHeaderSubTitle.equals("") ) {
-                    //Log.i("Youssef", "navHeaderSubTitle is " + navHeaderSubTitle);
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            editText_navHeaderSubtitle.setText( navHeaderSubTitle );
-                        }
-                    });
-                }
-            }
-        } ).start();
-    }
-
-    void saveNavHeaderImg( final String imagePath ) {
-        ( new Thread() {
-            public void run() {
-                NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
-                navHeaderEntity.imagePath = imagePath;
-                permanentDao.updateNavHeader(navHeaderEntity);
-            }
-        }).start();
-    }
-
-    void loadNavHeaderImage( final ImageButton imageButton_navheadermain ) {
-        ( new Thread() { //opening the database needs to be on a separate thread.
-            public void run() {
-                String imagePath = permanentDao.getNavHeader().imagePath; //interesting how the compiler does not complain for an NPE
-                if( imagePath != null && !imagePath.equals("") ) {
-                    //Log.i("Youssef", "imagePath is " + imagePath);
-                    final Uri imageUri = Uri.fromFile(new File(imagePath));
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            imageButton_navheadermain.setImageURI( imageUri ); //It works even if the path contains spaces.
-                        }
-                    });
-                }
-            }
-        } ).start();
-    }
-
     private void loadNavEntities() {
         final List<NavEntity> navEntityList = permanentDao.getAllNav();
         activity.runOnUiThread(new Runnable() {
@@ -342,38 +257,34 @@ class DbOperations {
     }
 
     void loadBb( final int indexOfNavMenuItem, final boolean setColor ) {
-        new Thread() { //opening the database needs to be on a separate thread.
-            public void run() {
-                try {
-                    final List<NavEntity> navEntityList = permanentDao.getAllNav();
-                    activity.runOnUiThread( new Runnable() {
-                        @Override
+        try {
+            final List<NavEntity> navEntityList = permanentDao.getAllNav();
+            activity.runOnUiThread( new Runnable() {
+                @Override
+                public void run() {
+                    new Handler().postDelayed(new Runnable() {
                         public void run() {
-                            new Handler().postDelayed(new Runnable() {
-                                public void run() {
-                                    final String bottombar_backgroundColorTag = navEntityList.get( indexOfNavMenuItem ).bottombar_backgroundColorTag;
-                                    if( bottombar_backgroundColorTag == null ||
-                                            !bottombar_backgroundColorTag.equalsIgnoreCase("none") ) { //my convention
-                                        activity.bottomNavigationView.setVisibility(BottomNavigationView.VISIBLE);
-                                        Log.i("Youssef", "showing bb of " + indexOfNavMenuItem);
-                                        if( bottombar_backgroundColorTag != null && setColor ) {
-                                            activity.setBottomBarBackgroundColor( bottombar_backgroundColorTag );
-                                        }
-                                    } else if( bottombar_backgroundColorTag.equalsIgnoreCase("none") ) {
-                                        activity.bottomNavigationView.setVisibility(BottomNavigationView.INVISIBLE);
-                                        Log.i("Youssef", "hiding bb of " + indexOfNavMenuItem);
-                                    }
-
+                            final String bottombar_backgroundColorTag = navEntityList.get( indexOfNavMenuItem ).bottombar_backgroundColorTag;
+                            if( bottombar_backgroundColorTag == null ||
+                                    !bottombar_backgroundColorTag.equalsIgnoreCase("none") ) { //my convention
+                                activity.bottomNavigationView.setVisibility(BottomNavigationView.VISIBLE);
+                                Log.i("Youssef", "showing bb of " + indexOfNavMenuItem);
+                                if( bottombar_backgroundColorTag != null && setColor ) {
+                                    activity.setBottomBarBackgroundColor( bottombar_backgroundColorTag );
                                 }
-                            }, 100); //unfortunately needed.
+                            } else if( bottombar_backgroundColorTag.equalsIgnoreCase("none") ) {
+                                activity.bottomNavigationView.setVisibility(BottomNavigationView.INVISIBLE);
+                                Log.i("Youssef", "hiding bb of " + indexOfNavMenuItem);
+                            }
 
                         }
-                    });
-                } catch ( Exception e) {
-                    Log.e("fatal", "I got an error", e);
+                    }, 100); //unfortunately needed.
+
                 }
-            }
-        }.start();
+            });
+        } catch ( Exception e) {
+            Log.e("fatal", "I got an error", e);
+        }
     }
 
     void setNameOfNavItem( final int indexOfNavMenuItem, final String name ) {
@@ -434,4 +345,161 @@ class DbOperations {
             db.endTransaction();
         }
     }
+
+    void setIconOfCheckedNavMenuItem( final String tag, final int nav_menuitem_index ) { //we know it won't be null, so I won't protect it
+        List<NavEntity> navEntityList = permanentDao.getAllNav();
+        NavEntity navEntity = navEntityList.get( nav_menuitem_index );
+        navEntity.iconTag  = tag;
+        Log.i("Youssef", "nav icon is set in db for " + nav_menuitem_index );
+        permanentDao.updateNav( navEntity );
+    }
+
+//##########################################################################################################################
+//####################### Nav Header Stuff #################################################################################
+//##########################################################################################################################
+    void loadNavHeaderStuff() {
+        (new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                loadNavHeaderBackgroundColor();
+                loadNavHeaderTitles();
+                loadNavHeaderImage(); //loading the image from the last known URI (if selected by user)
+            }
+        }).start();
+    }
+
+    private void loadNavHeaderBackgroundColor() {
+        NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
+        //Log.i("Youssef", "Loading nav host background color from the database");
+        final String backgroundColorTag = navHeaderEntity.backgroundColor;
+        if( backgroundColorTag != null && !backgroundColorTag.equals("") ) {
+            final LinearLayout linearLayout = activity.findViewById(R.id.linearlayout_navheader);
+            final int color_id = activity.getResources().getIdentifier( backgroundColorTag,
+                    "color", activity.getPackageName() );
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    linearLayout.setBackgroundColor( activity.getResources().getColor( color_id ) );
+                }
+            });
+        }
+    }
+
+    private void loadNavHeaderImage() {
+        final ImageButton imageButton_navheadermain = activity.findViewById(R.id.imagebutton_navheadermain);
+        String imagePath = permanentDao.getNavHeader().imagePath; //interesting how the compiler does not complain for an NPE
+        if( imagePath != null && !imagePath.equals("") ) {
+            //Log.i("Youssef", "imagePath is " + imagePath);
+            final Uri imageUri = Uri.fromFile(new File(imagePath));
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    imageButton_navheadermain.setImageURI( imageUri ); //It works even if the path contains spaces.
+                }
+            });
+        }
+    }
+
+    private void loadNavHeaderTitles() {
+        final EditText editText_navHeaderTitle = activity.findViewById(R.id.editText_navheadertitle);
+        final EditText editText_navHeaderSubtitle = activity.findViewById(R.id.editText_navheadersubtitle);
+        final String navHeaderTitle = permanentDao.getNavHeader().title; //interesting how the compiler does not complain for an NPE
+        if( navHeaderTitle != null && !navHeaderTitle.equals("") ) {
+            //Log.i("Youssef", "navHeaderTitle is " + navHeaderTitle);
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    editText_navHeaderTitle.setText( navHeaderTitle );
+                }
+            });
+        }
+        final String navHeaderSubTitle = permanentDao.getNavHeader().subtitle; //interesting how the compiler does not complain for an NPE
+        if( navHeaderSubTitle != null && !navHeaderSubTitle.equals("") ) {
+            //Log.i("Youssef", "navHeaderSubTitle is " + navHeaderSubTitle);
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    editText_navHeaderSubtitle.setText( navHeaderSubTitle );
+                }
+            });
+        }
+    }
+
+    void saveNavHeaderBackgroundColor( final String tag ) {
+        ( new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
+                //Log.i("Youssef", "Saving nav host background onto the database");
+                navHeaderEntity.backgroundColor = tag;
+                updateNavHeader(navHeaderEntity);
+            }
+        } ).start();
+    }
+
+    void saveNavHeaderTitles( final EditText editText, final EditText editText_navHeaderTitle,
+                              final EditText editText_navHeaderSubtitle) {
+        ( new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
+                if( editText.equals( editText_navHeaderTitle )) {
+                    ////Log.i("Youssef", "edittext header title has lost focus");
+                    navHeaderEntity.title = editText.getText().toString();
+                    updateNavHeader( navHeaderEntity );
+                }
+                if( editText.equals( editText_navHeaderSubtitle )) {
+                    ////Log.i("Youssef", "edittext header subtitle has lost focus");
+                    navHeaderEntity.subtitle = editText.getText().toString();
+                    updateNavHeader( navHeaderEntity );
+                }
+            }
+        } ).start();
+    }
+
+    void saveNavHeaderImg( final String imagePath ) {
+        ( new Thread() {
+            public void run() {
+                NavHeaderEntity navHeaderEntity = permanentDao.getNavHeader();
+                navHeaderEntity.imagePath = imagePath;
+                updateNavHeader(navHeaderEntity);
+            }
+        }).start();
+    }
+
+    private synchronized void updateNavHeader( NavHeaderEntity navHeaderEntity ) { //synchronized might not be needed as this is probably inherent.
+        if (!db.isOpen()) { //will not happen.
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                }
+            });
+            return;
+        }
+        permanentDao.updateNavHeader(navHeaderEntity);
+    }
+
+//##########################################################################################################################
+//#######################                  #################################################################################
+//##########################################################################################################################
+
+    void switchNavItems_Upwards( final int lowerItemOrder ) { //lowerItemOrder is the old lower item index
+        ( new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                final List<NavEntity> navEntityList = permanentDao.getAllNav();
+                NavEntity navEntity2 = navEntityList.get( lowerItemOrder );
+                NavEntity navEntity1 = navEntityList.get( lowerItemOrder - 1 );
+                int intermediateIndex = navEntity1.index;
+                navEntity1.index = navEntity2.index;
+                navEntity2.index = intermediateIndex;
+                int intermediateUId = navEntity1.uid;
+                navEntity1.uid = navEntity2.uid;
+                navEntity2.uid = intermediateUId;
+                //Log.i("switchNavItems","position 1");
+                permanentDao.updateNav( navEntity1 ); //this might cause sometimes a silent error, such that the statements after it don't work
+                //Log.i("switchNavItems","position 2");
+                permanentDao.updateNav( navEntity2 );
+                //Log.i("switchNavItems","position 3");
+            }
+        } ).start();
+    }
+
 }

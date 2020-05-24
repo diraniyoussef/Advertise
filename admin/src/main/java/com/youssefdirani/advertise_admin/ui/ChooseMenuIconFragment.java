@@ -31,7 +31,6 @@ public class ChooseMenuIconFragment extends Fragment {
         } else {
             indexOfNavMenuItem = getArguments().getInt("index_of_navmenuitem");
 
-
             View.OnClickListener onClickListener = new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -43,7 +42,6 @@ public class ChooseMenuIconFragment extends Fragment {
                     switch( action ) {
                         case "navigation menu icon":
                             activity.setIconOfCheckedMenuItem( tag, indexOfNavMenuItem, "nav menu");
-                            //activity.setIconOfNavMenuItemInDb( indexOfNavMenuItem, tag );
                             break;
                         case "bottom bar menu item":
                             activity.setIconOfCheckedMenuItem( tag, indexOfNavMenuItem, "bottom nav menu");
@@ -99,9 +97,6 @@ public class ChooseMenuIconFragment extends Fragment {
             activity.updateToolbarTitle( indexOfNavMenuItem ); //unfortunately needed.
         }
         activity.showOptionsMenuAndBottomMenu( indexOfNavMenuItem );
-        if( indexOfNavMenuItem == 0 ) { //it's ok to omit this anyway
-            activity.setFirstOptionsMenuIcon();
-        }
     }
 
 }

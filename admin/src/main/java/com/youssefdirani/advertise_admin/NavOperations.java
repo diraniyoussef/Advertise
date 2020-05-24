@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
@@ -21,7 +22,6 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 
 import java.io.File;
@@ -56,25 +56,7 @@ class NavOperations {
     private Menu navMenu;
     private Toolbar toolbar;
 
-    NavOperations( MainActivity activity, Toolbar toolbar ) {
-        this.activity = activity;
-        this.toolbar = toolbar;
-    }
-
-    NavigationView getNavigationView() {
-        navigationView = activity.findViewById(R.id.nav_view);
-        return navigationView;
-    }
-
-    void startingSetup( Menu navMenu ) {
-        this.navMenu = navMenu;
-        drawer = activity.findViewById( R.id.drawer_layout );
-        navController = Navigation.findNavController(activity, R.id.nav_host_fragment);
-        setupNavigation();
-        setupDrawer();// Set the drawer toggle as the DrawerListener
-    }
-
-    private final int[] FragmentId = { R.id.nav_home, R.id.nav_fragment1, R.id.nav_fragment2, R.id.nav_fragment3,
+    final int[] FragmentId = { R.id.nav_home, R.id.nav_fragment1, R.id.nav_fragment2, R.id.nav_fragment3,
             R.id.nav_fragment4, R.id.nav_fragment5 };
 
     void setupNavigation() {
@@ -307,89 +289,6 @@ class NavOperations {
         return false;
     }
 
-    private void setNavHeader() {
-        setAndLoadNavHeaderImage();
-        setAndLoadNavHeaderTitles();
-        activity.dbOperations.loadNavHeaderBackgroundColor();
-        //activity.loadNavEntities();
-    }
-
-    private void setAndLoadNavHeaderTitles() {
-        final EditText editText_navHeaderTitle = activity.findViewById(R.id.editText_navheadertitle);
-        final EditText editText_navHeaderSubtitle = activity.findViewById(R.id.editText_navheadersubtitle);
-        View.OnFocusChangeListener onFocusChangeListener = new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if( ( v.equals( editText_navHeaderTitle ) || v.equals( editText_navHeaderSubtitle ) ) && !hasFocus ) {
-                    // code to execute when EditText loses focus
-                    activity.dbOperations.saveHeaderTitles( (EditText) v, editText_navHeaderTitle, editText_navHeaderSubtitle );
-                }
-            }
-        };
-        editText_navHeaderTitle.setOnFocusChangeListener( onFocusChangeListener );
-        editText_navHeaderSubtitle.setOnFocusChangeListener( onFocusChangeListener );
-
-        //now loading
-        activity.dbOperations.loadHeaderTitles( editText_navHeaderTitle, editText_navHeaderSubtitle );
-    }
-
-    //Related to the navigation menu (header actually)
-    private final int REQUEST_CODE_LOAD_IMG = 1;
-    private void setAndLoadNavHeaderImage() {
-        final ImageButton imageButton_navheadermain = activity.findViewById(R.id.imagebutton_navheadermain);
-        if( imageButton_navheadermain != null ) { //won't be null I believe
-            //for the client app, it's best to store the image to sd-card and the path to shared preferences https://stackoverflow.com/questions/8586242/how-to-store-images-using-sharedpreference-in-android
-            imageButton_navheadermain.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                    photoPickerIntent.setType("image/*");
-                    activity.startActivityForResult(photoPickerIntent, REQUEST_CODE_LOAD_IMG);
-                }
-            });
-            //loading the image from the last known URI (if selected by user)
-            activity.dbOperations.loadNavHeaderImage( imageButton_navheadermain );
-        }
-    }
-
-    void onActivityResult(int reqCode, int resultCode, Intent data) {
-        //Log.i("onActivityResult", "inside");
-        if( reqCode == REQUEST_CODE_LOAD_IMG && resultCode == RESULT_OK ) {
-            try {
-                final Uri imageUri = data.getData();
-
-                if (imageUri == null) {//should never happen
-                    Toast.makeText(activity, "Something went wrong", Toast.LENGTH_LONG).show();
-                    return;
-                }
-                //final SharedPreferences.Editor prefs_editor = client_app_data.edit();
-
-                final InputStream imageStream = activity.getContentResolver().openInputStream(imageUri);
-                Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
-                selectedImage = Bitmap.createScaledBitmap(selectedImage, 220, 220, false);
-                //saving the image in the scaled size
-                final String imagePath = activity.getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-                        + File.separator + "navmenu.jpg";
-                File f = new File(imagePath); //https://stackoverflow.com/questions/57116335/environment-getexternalstoragedirectory-deprecated-in-api-level-29-java and https://developer.android.com/reference/android/content/Context#getExternalFilesDirs(java.lang.String)
-                OutputStream fOut = new FileOutputStream(f);
-                selectedImage.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
-                fOut.flush();
-                fOut.close();
-
-                final Bitmap bitmap = selectedImage;
-                activity.dbOperations.saveNavHeaderImg( imagePath );
-                ImageButton imageButton_navheadermain = activity.findViewById(R.id.imagebutton_navheadermain);
-                imageButton_navheadermain.setImageBitmap( bitmap );
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-                Toast.makeText(activity, "Something went wrong", Toast.LENGTH_LONG).show();
-            } catch (IOException e) { //for the sake of fOut.flush and .close
-                e.printStackTrace();
-                Toast.makeText(activity, "Something went wrong", Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
     private void addNavMenuItem( int id, int order, String title ) {
         final MenuItem createdMenuItem = navMenu.add( R.id.main_drawer_group, id,
                 order, title ); //the order is in coherence with orderInCategory inside activity_main_drawer.xml. It may get larger than getMenuItemsCount(), this is because we delete items without fixing the order then when we may add again a new menu item.
@@ -437,19 +336,6 @@ class NavOperations {
         return count;
     }
 
-    void setLayoutColor( int linearlayout_id, final String tag ) { //this is same as saying setNavHeaderBackgroundColor
-        LinearLayout linearLayout = activity.findViewById( linearlayout_id );
-        int color_id = activity.getResources().getIdentifier( tag, "color", activity.getPackageName() );
-        linearLayout.setBackgroundColor( activity.getResources().getColor( color_id ) );
-        //saving into the database
-        activity.dbOperations.saveNavHeaderBackgroundColor( tag );
-    }
-
-    boolean onSupportNavigateUp() {
-        setNavHeader();
-        return NavigationUI.navigateUp( navController, mAppBarConfiguration );
-    }
-
     private void setupDrawer() {
         drawer.addDrawerListener( new ActionBarDrawerToggle( activity, drawer,
                 R.string.drawer_open, R.string.drawer_close ) {
@@ -495,22 +381,17 @@ class NavOperations {
                                 Toast.makeText(activity,"Menu Item is already on top !", Toast.LENGTH_LONG ).show();
                                 return;
                             }
-                            final String title2 = navMenu.getItem( checkedItemOrder ).getTitle().toString();
-                            final Drawable drawable2 = navMenu.getItem( checkedItemOrder ).getIcon();
-                            final int id2 = navMenu.getItem( checkedItemOrder ).getItemId();
-                            final int order2 = navMenu.getItem( checkedItemOrder ).getOrder();
-                            final String title1 = navMenu.getItem( checkedItemOrder - 1 ).getTitle().toString();
-                            final Drawable drawable1 = navMenu.getItem( checkedItemOrder - 1 ).getIcon();
-                            final int id1 = navMenu.getItem( checkedItemOrder - 1 ).getItemId();
-                            final int order1 = navMenu.getItem( checkedItemOrder - 1 ).getOrder();
-                            navMenu.removeItem( id1 );
-                            navMenu.removeItem( id2 );
-                            addNavMenuItem( id1, order2, title1 ); //the important thing is the order.
-                            addNavMenuItem( id2, order1, title2 ); //this will be checked, and the other one will be unchecked.
-                            navMenu.findItem( id2 ).setIcon( drawable2 );
-                            navMenu.findItem( id1 ).setIcon( drawable1 );
+                            switchItems_Upwards( checkedItemOrder );
+                            activity.dbOperations.switchNavItems_Upwards( checkedItemOrder );
+
+                            //now to specify which menu item to check
+                            MenuItem menuItem = navMenu.getItem(checkedItemOrder - 1 );
+                            menuItem.setChecked(true);
+                            activity.toolbar.setTitle( menuItem.getTitle().toString() );
+                            //navigateToMenuItem( menuItem.getItemId(), menuItem.getTitle().toString() );
+
                             if( checkedItemOrder - 1 == 0 ) {
-                                activity.setFirstOptionsMenuIcon();
+                                activity.optionsMenu.setFirstOptionsMenuIcon();
                             }
                             //I won't be navigating. Since we already see a fragment, and no need to reenter in it again
                             Toast.makeText(activity, "Successful reordering", Toast.LENGTH_SHORT ).show();
@@ -530,23 +411,18 @@ class NavOperations {
                                 Toast.makeText( activity,"Menu Item is already below all !", Toast.LENGTH_LONG ).show();
                                 return;
                             }
-                            final String title2 = navMenu.getItem( checkedItemOrder ).getTitle().toString();
-                            final Drawable drawable2 = navMenu.getItem( checkedItemOrder ).getIcon();
-                            final int id2 = navMenu.getItem( checkedItemOrder ).getItemId();
-                            final int order2 = navMenu.getItem( checkedItemOrder ).getOrder();
-                            final String title1 = navMenu.getItem( checkedItemOrder + 1 ).getTitle().toString();
-                            final Drawable drawable1 = navMenu.getItem( checkedItemOrder + 1 ).getIcon();
-                            final int id1 = navMenu.getItem( checkedItemOrder + 1 ).getItemId();
-                            final int order1 = navMenu.getItem( checkedItemOrder + 1 ).getOrder();
-                            navMenu.removeItem( id1 );
-                            navMenu.removeItem( id2 );
-                            addNavMenuItem( id1, order2, title1 ); //the important thing is the order.
-                            addNavMenuItem( id2, order1, title2 ); //this will be checked, and the other one will be unchecked.
-                            navMenu.findItem( id2 ).setIcon( drawable2 );
-                            navMenu.findItem( id1 ).setIcon( drawable1 );
+                            switchItems_Upwards( checkedItemOrder + 1 );
+                            activity.dbOperations.switchNavItems_Upwards( checkedItemOrder + 1 );
+
+                            //now to specify which menu item to check
+                            MenuItem menuItem = navMenu.getItem(checkedItemOrder + 1 );
+                            menuItem.setChecked(true);
+                            activity.toolbar.setTitle( menuItem.getTitle().toString() );
                             //I won't be navigating. Since we already see a fragment, and no need to reenter in it again
+                            //navigateToMenuItem( menuItem.getItemId(), menuItem.getTitle().toString() );
+
                             if( checkedItemOrder == 0 ) {
-                                activity.setFirstOptionsMenuIcon();
+                                activity.optionsMenu.setFirstOptionsMenuIcon();
                             }
                             Toast.makeText(activity, "Successful reordering", Toast.LENGTH_SHORT ).show();
                         }
@@ -555,6 +431,23 @@ class NavOperations {
                     default:
                         //return;
                 }
+            }
+
+            private void switchItems_Upwards( final int lowerItemOrder ) { //lowerItemOrder is the old lower item index
+                final String title2 = navMenu.getItem( lowerItemOrder ).getTitle().toString();
+                final Drawable drawable2 = navMenu.getItem( lowerItemOrder ).getIcon();
+                final int id2 = navMenu.getItem( lowerItemOrder ).getItemId();
+                final int order2 = navMenu.getItem( lowerItemOrder ).getOrder();
+                final String title1 = navMenu.getItem( lowerItemOrder - 1 ).getTitle().toString();
+                final Drawable drawable1 = navMenu.getItem( lowerItemOrder - 1 ).getIcon();
+                final int id1 = navMenu.getItem( lowerItemOrder - 1 ).getItemId();
+                final int order1 = navMenu.getItem( lowerItemOrder - 1 ).getOrder();
+                navMenu.removeItem( id1 );
+                navMenu.removeItem( id2 );
+                addNavMenuItem( id1, order2, title1 ); //the important thing is the order.
+                addNavMenuItem( id2, order1, title2 ); //this will be checked, and the other one will be unchecked.
+                navMenu.findItem( id2 ).setIcon( drawable2 );
+                navMenu.findItem( id1 ).setIcon( drawable1 );
             }
 
             private void hideKeyboard() {
@@ -586,29 +479,73 @@ class NavOperations {
         drawer.closeDrawer(GravityCompat.START); //after this, onResume in the fragment is called. Tested. Still, it's better to make sure using a timer or something.
     }
 
-    private void navigateToMenuItem( int idOfNewMenuItem, Bundle bundle ) {
+    private void navigateToMenuItem( final int idOfNewMenuItem, Bundle bundle ) {
         navController.navigate( idOfNewMenuItem, bundle );
-        activity.dbOperations.loadBb(
-                getItemOrderFromTitle(navMenu.findItem(idOfNewMenuItem).getTitle().toString()), true);
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                activity.dbOperations.setOnNavigate(
+                    getItemOrderFromTitle(
+                            navMenu.findItem(idOfNewMenuItem).getTitle().toString() ) );
+            }
+        }.start();
     }
 
-    void setIconOfCheckedMenuItem( String tag, int nav_menuitem_index ) {
+    void setIconOfCheckedMenuItem( String tag, int indexOfNavMenuItem ) {
         if( tag == null ) {
             return;
         }
         if( tag.equalsIgnoreCase("ic_no_icon") ) {
-            MenuItem menuItem = navMenu.getItem( nav_menuitem_index );
+            MenuItem menuItem = navMenu.getItem( indexOfNavMenuItem );
             menuItem.setIcon(0);
+            if( indexOfNavMenuItem == 0 ) {
+                new Handler().postDelayed(
+                    new Runnable() {
+                        public void run() {
+                            activity.optionsMenu.setFirstOptionsMenuIcon();
+                        }
+                }, 100); //unfortunately needed.
+            }
             return;
         }
+        //Log.i("addAnItem", "nav icon is set in ui of index " + nav_menuitem_index);
         int icon_drawable_id = activity.getResources().getIdentifier( tag, "drawable", activity.getPackageName() );
         Drawable icon = activity.getResources().getDrawable( icon_drawable_id );
-        navMenu.getItem( nav_menuitem_index ).setIcon( icon );
+        navMenu.getItem( indexOfNavMenuItem ).setIcon( icon );
+        if( indexOfNavMenuItem == 0 ) {
+            new Handler().postDelayed(
+                new Runnable() {
+                    public void run() {
+                        activity.optionsMenu.setFirstOptionsMenuIcon();
+                    }
+                }, 100); //unfortunately needed.
+        }
+    }
+
+//##########################################################################################################################
+//####################### onCreate #################################################################################
+//##########################################################################################################################
+    NavOperations( MainActivity activity, Toolbar toolbar ) {
+        this.activity = activity;
+        this.toolbar = toolbar;
+    }
+
+    NavigationView getNavigationView() {
+        navigationView = activity.findViewById(R.id.nav_view);
+        return navigationView;
+    }
+
+    void startingSetup( Menu navMenu ) {
+        this.navMenu = navMenu;
+        drawer = activity.findViewById( R.id.drawer_layout );
+        navController = Navigation.findNavController(activity, R.id.nav_host_fragment);
+        setupNavigation();
+        setupDrawer();// Set the drawer toggle as the DrawerListener
     }
 
     void addAnItem( NavEntity navEntity ) { //navMenu.getItem( navOperations.getNavMenuItemsCount() - 1 ).getOrder() + 1
-        navMenu.add( R.id.main_drawer_group, getAFreeId(),navMenu.size() + 1, navEntity.title );
-        setIconOfCheckedMenuItem( navEntity.iconTag,navMenu.size() - 1 );
+        //Log.i("addAnItem", "order is " + (getNavMenuItemsCount() + 1) );
+        navMenu.add( R.id.main_drawer_group, getAFreeId(),getNavMenuItemsCount() + 1, navEntity.title );
+        setIconOfCheckedMenuItem( navEntity.iconTag,getNavMenuItemsCount() - 1 );
     }
 
     void updateNavItem( int navIndex, String title, String iconTag ) { //useful to update either the title or the icon
@@ -618,5 +555,101 @@ class NavOperations {
         }
         setIconOfCheckedMenuItem( iconTag, navIndex );
     }
+
+//##########################################################################################################################
+//####################### Nav Header Stuff #################################################################################
+//##########################################################################################################################
+    void setLayoutColor( int linearlayout_id, final String tag ) { //this is same as saying setNavHeaderBackgroundColor
+        LinearLayout linearLayout = activity.findViewById( linearlayout_id );
+        int color_id = activity.getResources().getIdentifier( tag, "color", activity.getPackageName() );
+        linearLayout.setBackgroundColor( activity.getResources().getColor( color_id ) );
+        //saving into the database
+        activity.dbOperations.saveNavHeaderBackgroundColor( tag );
+    }
+
+    boolean onSupportNavigateUp() {
+        activity.dbOperations.loadNavHeaderStuff();
+        return NavigationUI.navigateUp( navController, mAppBarConfiguration );
+    }
+
+    void setNavHeader() { //if this caused trouble, you may call it from onSupportNavigateUp()
+        setNavHeaderImage();
+        setNavHeaderTitles();
+    }
+
+    private void setNavHeaderTitles() {
+        final EditText editText_navHeaderTitle = activity.findViewById(R.id.editText_navheadertitle);
+        final EditText editText_navHeaderSubtitle = activity.findViewById(R.id.editText_navheadersubtitle);
+        View.OnFocusChangeListener onFocusChangeListener = new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if( ( v.equals( editText_navHeaderTitle ) || v.equals( editText_navHeaderSubtitle ) ) && !hasFocus ) {
+                    // code to execute when EditText loses focus
+                    activity.dbOperations.saveNavHeaderTitles( (EditText) v, editText_navHeaderTitle, editText_navHeaderSubtitle );
+                }
+            }
+        };
+        editText_navHeaderTitle.setOnFocusChangeListener( onFocusChangeListener );
+        editText_navHeaderSubtitle.setOnFocusChangeListener( onFocusChangeListener );
+    }
+
+    //Related to the navigation menu (header actually)
+    private final int REQUEST_CODE_LOAD_IMG = 1;
+    private void setNavHeaderImage() {
+        final ImageButton imageButton_navheadermain = activity.findViewById(R.id.imagebutton_navheadermain);
+        if( imageButton_navheadermain != null ) { //won't be null I believe
+            //for the client app, it's best to store the image to sd-card and the path to shared preferences https://stackoverflow.com/questions/8586242/how-to-store-images-using-sharedpreference-in-android
+            imageButton_navheadermain.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+                    photoPickerIntent.setType("image/*");
+                    activity.startActivityForResult(photoPickerIntent, REQUEST_CODE_LOAD_IMG);
+                }
+            });
+        }
+    }
+
+    void onActivityResult(int reqCode, int resultCode, Intent data) {
+        //Log.i("onActivityResult", "inside");
+        if( reqCode == REQUEST_CODE_LOAD_IMG && resultCode == RESULT_OK ) {
+            try {
+                final Uri imageUri = data.getData();
+
+                if (imageUri == null) {//should never happen
+                    Toast.makeText(activity, "Something went wrong", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                //final SharedPreferences.Editor prefs_editor = client_app_data.edit();
+
+                final InputStream imageStream = activity.getContentResolver().openInputStream(imageUri);
+                Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
+                selectedImage = Bitmap.createScaledBitmap(selectedImage, 220, 220, false);
+                //saving the image in the scaled size
+                final String imagePath = activity.getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                        + File.separator + "navmenu.jpg";
+                File f = new File(imagePath); //https://stackoverflow.com/questions/57116335/environment-getexternalstoragedirectory-deprecated-in-api-level-29-java and https://developer.android.com/reference/android/content/Context#getExternalFilesDirs(java.lang.String)
+                OutputStream fOut = new FileOutputStream(f);
+                selectedImage.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
+                fOut.flush();
+                fOut.close();
+
+                final Bitmap bitmap = selectedImage;
+                activity.dbOperations.saveNavHeaderImg( imagePath );
+                ImageButton imageButton_navheadermain = activity.findViewById(R.id.imagebutton_navheadermain);
+                imageButton_navheadermain.setImageBitmap( bitmap );
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                Toast.makeText(activity, "Something went wrong", Toast.LENGTH_LONG).show();
+            } catch (IOException e) { //for the sake of fOut.flush and .close
+                e.printStackTrace();
+                Toast.makeText(activity, "Something went wrong", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+//##########################################################################################################################
+//#######################                        ###########################################################################
+//##########################################################################################################################
 
 }
