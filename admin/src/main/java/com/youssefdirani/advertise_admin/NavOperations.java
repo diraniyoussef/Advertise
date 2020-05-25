@@ -483,7 +483,7 @@ class NavOperations {
         navController.navigate( idOfNewMenuItem, bundle );
         new Thread() { //opening the database needs to be on a separate thread.
             public void run() {
-                activity.dbOperations.setOnNavigate(
+                activity.dbOperations.loadOnNavigate(
                     getItemOrderFromTitle(
                             navMenu.findItem(idOfNewMenuItem).getTitle().toString() ) );
             }

@@ -29,7 +29,7 @@
                     android:icon="@drawable/ic_format_paint_black_24dp"
                     android:title="Assign Background Color" />
                 <item
-                    android:id="@+id/statusbar_iconcolor"
+                    android:id="@+id/statusbar_icontint"
                     android:icon="@drawable/ic_star_half_black_24dp"
                     android:checkable="true"
                     android:checked="false"

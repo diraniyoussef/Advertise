@@ -169,10 +169,37 @@ class DbOperations {
         }
     }
 
-    void setOnNavigate( final int navIndex ) { //have to load everything
+    void loadOnNavigate( final int navIndex ) { //have to load everything
         loadBb( navIndex, true );
+        loadStatusBar( navIndex );
 
+    }
 
+    private void loadStatusBar( final int indexOfNavMenuItem ) {
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        final NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
+        activity.runOnUiThread( new Runnable() {
+            @Override
+            public void run() {
+                setStatusBarColor();
+                setStatusBarTint();
+            }
+
+            void setStatusBarTint() {
+                final boolean isStatusBarDark = navEntity.statusBar_dark;
+                activity.setStatusBarIconTint( isStatusBarDark );
+                activity.setStatusBarIconTintMenuItem( isStatusBarDark );
+            }
+
+            private void setStatusBarColor() {
+                final String backgroundColorTag = navEntity.statusBar_backgroundColorTag;
+                if( backgroundColorTag != null && !backgroundColorTag.equalsIgnoreCase("none") ) {
+                    activity.setStatusBarColor( backgroundColorTag );
+                } else {
+                    activity.setStatusBarColor( "colorPrimaryDark" );
+                }
+            }
+        });
     }
 
     void onCreate() {
@@ -187,7 +214,7 @@ class DbOperations {
                 setBottomBarTableAndFirstBottomNavContentTable(0);
                 //https://developer.android.com/reference/android/database/sqlite/SQLiteDatabase#execSQL(java.lang.String,%20java.lang.Object[])
                 loadNavEntities();
-                setOnNavigate(0);
+                loadOnNavigate(0);
             }
 
             private void insertNavEntity() {
@@ -257,34 +284,28 @@ class DbOperations {
     }
 
     void loadBb( final int indexOfNavMenuItem, final boolean setColor ) {
-        try {
-            final List<NavEntity> navEntityList = permanentDao.getAllNav();
-            activity.runOnUiThread( new Runnable() {
-                @Override
-                public void run() {
-                    new Handler().postDelayed(new Runnable() {
-                        public void run() {
-                            final String bottombar_backgroundColorTag = navEntityList.get( indexOfNavMenuItem ).bottombar_backgroundColorTag;
-                            if( bottombar_backgroundColorTag == null ||
-                                    !bottombar_backgroundColorTag.equalsIgnoreCase("none") ) { //my convention
-                                activity.bottomNavigationView.setVisibility(BottomNavigationView.VISIBLE);
-                                Log.i("Youssef", "showing bb of " + indexOfNavMenuItem);
-                                if( bottombar_backgroundColorTag != null && setColor ) {
-                                    activity.setBottomBarBackgroundColor( bottombar_backgroundColorTag );
-                                }
-                            } else if( bottombar_backgroundColorTag.equalsIgnoreCase("none") ) {
-                                activity.bottomNavigationView.setVisibility(BottomNavigationView.INVISIBLE);
-                                Log.i("Youssef", "hiding bb of " + indexOfNavMenuItem);
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        activity.runOnUiThread( new Runnable() {
+            @Override
+            public void run() {
+                new Handler().postDelayed(new Runnable() {
+                    public void run() {
+                        final String bottombar_backgroundColorTag = navEntityList.get( indexOfNavMenuItem ).bottombar_backgroundColorTag;
+                        if( bottombar_backgroundColorTag == null ||
+                                !bottombar_backgroundColorTag.equalsIgnoreCase("none") ) { //my convention
+                            activity.bottomNavigationView.setVisibility(BottomNavigationView.VISIBLE);
+                            Log.i("Youssef", "showing bb of " + indexOfNavMenuItem);
+                            if( bottombar_backgroundColorTag != null && setColor ) {
+                                activity.setBottomBarBackgroundColor( bottombar_backgroundColorTag );
                             }
-
+                        } else if( bottombar_backgroundColorTag.equalsIgnoreCase("none") ) {
+                            activity.bottomNavigationView.setVisibility(BottomNavigationView.INVISIBLE);
+                            Log.i("Youssef", "hiding bb of " + indexOfNavMenuItem);
                         }
-                    }, 100); //unfortunately needed.
-
-                }
-            });
-        } catch ( Exception e) {
-            Log.e("fatal", "I got an error", e);
-        }
+                    }
+                }, 100); //unfortunately needed.
+            }
+        });
     }
 
     void setNameOfNavItem( final int indexOfNavMenuItem, final String name ) {
@@ -310,6 +331,24 @@ class DbOperations {
         permanentDao.updateNav( navEntity ); //this might cause sometimes a silent error, such that the statements after it don't work
         Log.i("Youssef", "in setBbBackgroundColorTag, just to make sure : " +
                 permanentDao.getAllNav().get(indexOfNavMenuItem).bottombar_backgroundColorTag );
+    }
+
+    void setStatusBarColorTag( final int indexOfNavMenuItem, final String colorTag ) {
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
+        navEntity.statusBar_backgroundColorTag = colorTag;
+        permanentDao.updateNav( navEntity );
+    }
+
+    void setStatusBarIconTint( final int indexOfNavMenuItem, final boolean isChecked ) {
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                final List<NavEntity> navEntityList = permanentDao.getAllNav();
+                NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
+                navEntity.statusBar_dark = isChecked;
+                permanentDao.updateNav( navEntity );
+            }
+        }.start();
     }
 
     void deleteBbTable() {
@@ -494,7 +533,7 @@ class DbOperations {
                 navEntity1.uid = navEntity2.uid;
                 navEntity2.uid = intermediateUId;
                 //Log.i("switchNavItems","position 1");
-                permanentDao.updateNav( navEntity1 ); //this might cause sometimes a silent error, such that the statements after it don't work
+                permanentDao.updateNav( navEntity1 ); //the update is actually based on uid (consider it as a hidden argument)
                 //Log.i("switchNavItems","position 2");
                 permanentDao.updateNav( navEntity2 );
                 //Log.i("switchNavItems","position 3");

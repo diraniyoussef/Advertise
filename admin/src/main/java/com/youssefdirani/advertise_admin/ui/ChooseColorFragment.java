@@ -45,6 +45,7 @@ public class ChooseColorFragment extends Fragment {
                             break;
                         case "status bar background color":
                             activity.setStatusBarColor( tag );
+                            activity.setStatusBarColorInDb( indexOfNavMenuItem, tag );
                             break;
                         case "top bar background color":
                             activity.setTopBarBackgroundColor( tag );

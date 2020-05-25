@@ -3,10 +3,8 @@ package com.youssefdirani.advertise_admin;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -43,17 +41,11 @@ class OptionsMenu {
                 bundle.putString( "action", "status bar background color" );
                 activity.navOperations.navController.navigate( R.id.nav_color, bundle );
                 return true;
-            case R.id.statusbar_iconcolor:
+            case R.id.statusbar_icontint:
                 boolean isChecked = !item.isChecked();
                 item.setChecked(isChecked);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    View decor = activity.getWindow().getDecorView();
-                    if( isChecked ) { //make dark
-                        decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-                    } else {
-                        decor.setSystemUiVisibility(0);
-                    }
-                }
+                activity.setStatusBarIconTint( isChecked );
+                activity.dbOperations.setStatusBarIconTint( activity.navOperations.getCheckedItemOrder(), isChecked );
                 return true;
             case R.id.topbar_backgroundcolor:
                 bundle = new Bundle();
@@ -370,6 +362,8 @@ class OptionsMenu {
                 "6) You may not put any kind of music in the app." +
                 "\n" +
                 "7) You may not directly link to anything that infringes the above restrictions." +
+                "\n\n" +
+                "Please note that some features will not work on older versions of Android." +
                 "\n\n" +
                 "For any question or technical assistance, please contact the developer +961/70/853721");
         final ScrollView scrollView = new ScrollView( activity );

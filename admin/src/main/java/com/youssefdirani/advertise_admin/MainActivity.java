@@ -5,9 +5,11 @@ import android.content.Intent;
 import android.graphics.PorterDuff;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -214,6 +216,15 @@ public class MainActivity extends AppCompatActivity {
             getWindow().setStatusBarColor( ContextCompat.getColor(this, color_id ) );
         }
     }
+    public void setStatusBarColorInDb( final int navIndex, final String tag ) {
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                //Log.i("Youssef", "Setting BB background color of " + navIndex  + " to " + tag);
+                dbOperations.setStatusBarColorTag( navIndex, tag );
+            }
+        }.start();
+    }
+
     public void setTopBarBackgroundColor( String tag ) {
         int color_id = getResources().getIdentifier( tag, "color", getPackageName() );
         toolbar.setBackgroundColor( ContextCompat.getColor(this, color_id) );
@@ -240,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
     public void setBottomBarBackgroundColorInDb( final int navIndex, final String tag ) {
         new Thread() { //opening the database needs to be on a separate thread.
             public void run() {
-                Log.i("Youssef", "Setting BB background color of " + navIndex  + " to " + tag);
+                //Log.i("Youssef", "Setting BB background color of " + navIndex  + " to " + tag);
                 dbOperations.setBbBackgroundColorTag( navIndex, tag );
             }
         }.start();
@@ -273,7 +284,7 @@ public class MainActivity extends AppCompatActivity {
         }.start();
     }
 
-    public void onBB_Add() {
+    void onBB_Add() {
         bottomNavOperations.setDefault();
         new Thread() { //opening the database needs to be on a separate thread.
             public void run() {
@@ -284,4 +295,23 @@ public class MainActivity extends AppCompatActivity {
         }.start();
     }
 
+    void setStatusBarIconTint( boolean isChecked ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            View decor = getWindow().getDecorView();
+            if( isChecked ) { //make dark
+                decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+            } else {
+                decor.setSystemUiVisibility(0);
+            }
+        }
+    }
+
+    void setStatusBarIconTintMenuItem( final boolean isChecked ) {
+        new Handler().postDelayed(new Runnable() {
+            public void run() {
+                final MenuItem menuItem = toolbar.getMenu().findItem(R.id.statusbar_icontint);
+                menuItem.setChecked( isChecked ); //redundant in case the user clicked, but needed in case the user navigates and tint is set from database e.g.
+            }
+        }, 100); //unfortunately needed.
+    }
 }
