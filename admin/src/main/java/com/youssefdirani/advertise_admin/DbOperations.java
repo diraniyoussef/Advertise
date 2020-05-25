@@ -172,7 +172,26 @@ class DbOperations {
     void loadOnNavigate( final int navIndex ) { //have to load everything
         loadBb( navIndex, true );
         loadStatusBar( navIndex );
+        loadTopBarBackgroundColor( navIndex );
 
+    }
+
+    private void loadTopBarBackgroundColor(int navIndex) {
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        final NavEntity navEntity = navEntityList.get( navIndex );
+        activity.runOnUiThread( new Runnable() {
+            @Override
+            public void run() {
+                final String backgroundColorTag = navEntity.topBar_backgroundColorTag;
+
+                //ironically, we didn't need a 100 ms delay here ??
+                if( backgroundColorTag != null && !backgroundColorTag.equalsIgnoreCase("none") ) {
+                    activity.setTopBarBackgroundColor( backgroundColorTag );
+                } else {
+                    activity.setTopBarBackgroundColor( "design_default_color_primary" );
+                }
+            }
+        });
     }
 
     private void loadStatusBar( final int indexOfNavMenuItem ) {
@@ -331,6 +350,13 @@ class DbOperations {
         permanentDao.updateNav( navEntity ); //this might cause sometimes a silent error, such that the statements after it don't work
         Log.i("Youssef", "in setBbBackgroundColorTag, just to make sure : " +
                 permanentDao.getAllNav().get(indexOfNavMenuItem).bottombar_backgroundColorTag );
+    }
+
+    void setTopBarBackgroundColorTag( final int indexOfNavMenuItem, final String colorTag ) {
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
+        navEntity.topBar_backgroundColorTag = colorTag;
+        permanentDao.updateNav( navEntity );
     }
 
     void setStatusBarColorTag( final int indexOfNavMenuItem, final String colorTag ) {

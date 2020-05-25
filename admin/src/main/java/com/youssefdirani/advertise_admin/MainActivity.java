@@ -314,4 +314,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }, 100); //unfortunately needed.
     }
+
+    public void setTopBarColorInDb( final int indexOfNavMenuItem, final String tag) {
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                //Log.i("Youssef", "Setting BB background color of " + navIndex  + " to " + tag);
+                dbOperations.setTopBarBackgroundColorTag( indexOfNavMenuItem, tag );
+            }
+        }.start();
+    }
 }
