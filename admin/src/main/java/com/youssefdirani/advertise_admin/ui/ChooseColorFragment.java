@@ -53,6 +53,7 @@ public class ChooseColorFragment extends Fragment {
                             break;
                         case "top bar hamburger color":
                             activity.setTopBarHamburgerColor( tag );
+                            activity.setTopBarHamburgerColorInDb( indexOfNavMenuItem, tag );
                             break;
                         case "top bar title color":
                             activity.setTopBarTitleColor( tag );

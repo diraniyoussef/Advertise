@@ -173,7 +173,27 @@ class DbOperations {
         loadBb( navIndex, true );
         loadStatusBar( navIndex );
         loadTopBarBackgroundColor( navIndex );
+        loadTopBarHamburgerColor( navIndex );
 
+
+    }
+
+    private void loadTopBarHamburgerColor(int navIndex) {
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        final NavEntity navEntity = navEntityList.get( navIndex );
+        activity.runOnUiThread( new Runnable() {
+            @Override
+            public void run() {
+                final String backgroundColorTag = navEntity.topBar_hamburgerColorTag;
+
+                //ironically, we didn't need a 100 ms delay here ??
+                if( backgroundColorTag != null && !backgroundColorTag.equalsIgnoreCase("none") ) {
+                    activity.setTopBarHamburgerColor( backgroundColorTag );
+                } else {
+                    activity.setTopBarHamburgerColor( "colorWhite" );
+                }
+            }
+        });
     }
 
     private void loadTopBarBackgroundColor(int navIndex) {
@@ -356,6 +376,12 @@ class DbOperations {
         final List<NavEntity> navEntityList = permanentDao.getAllNav();
         NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
         navEntity.topBar_backgroundColorTag = colorTag;
+        permanentDao.updateNav( navEntity );
+    }
+    void setTopBarHamburgerColorTag(int indexOfNavMenuItem, String tag) {
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
+        navEntity.topBar_hamburgerColorTag = tag;
         permanentDao.updateNav( navEntity );
     }
 
@@ -566,5 +592,6 @@ class DbOperations {
             }
         } ).start();
     }
+
 
 }
