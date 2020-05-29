@@ -5,6 +5,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -20,6 +21,8 @@ import java.util.List;
 import androidx.room.Room;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 import androidx.sqlite.db.SupportSQLiteOpenHelper;
+import androidx.sqlite.db.SupportSQLiteQuery;
+import androidx.sqlite.db.SupportSQLiteQueryBuilder;
 
 class DbOperations {
     private MainActivity activity;
@@ -40,7 +43,7 @@ class DbOperations {
                 List<NavEntity> navEntityList = permanentDao.getAllNav();
                 navEntity.index = navEntityList.size(); //it's my convention to preserve throughout the app the order of indexes
                 permanentDao.insertNav( navEntity );
-                setBottomBarTableAndFirstBottomNavContentTable( activity.navOperations.getCheckedItemOrder() );
+                setBottomBarTableAndFirstBottomNavContentTable( activity.navOperations.getCheckedItemOrder() + 1 ); //getCheckedItemOrder still returns the old value
 
 
             }
@@ -128,12 +131,13 @@ class DbOperations {
         final String firstBottomNavContentTableName = generateBottomNavContentTableName( navIndex, 0 );
         try {
             createBbTable( bottomBarTableName );
+            Log.i("fatal","after createBbTable of " + bottomBarTableName );
             //normally we have to add 4 rows (if bb_0 table is made for the first time.) But I won't. I will keep everything to default as the first time the user (not the admin) opens the app, it will be similar to the admin's app
             db.execSQL("CREATE TABLE IF NOT EXISTS " + firstBottomNavContentTableName + " ( " +
                     "uid INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     "type TEXT, " +
                     "content TEXT);");
-            Log.i("fatal","after firstBottomNavContentTableName");
+            Log.i("fatal","after firstBottomNavContentTableName which is " + firstBottomNavContentTableName );
             //I can't insert anything here because it's up to the user to insert either images or texts or whatever.
             db.setTransactionSuccessful(); //to commit
         } catch(Exception e) {
@@ -174,8 +178,141 @@ class DbOperations {
         loadStatusBar( navIndex );
         loadTopBarBackgroundColor( navIndex );
         loadTopBarHamburgerColor( navIndex );
+        loadTopTitleColor( navIndex );
+        loadTop3DotsColor( navIndex );
+
+    }
+
+    void loadBb( final int indexOfNavMenuItem, final boolean setAll ) {
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        Looper.prepare(); //needed for some reason
+        new Handler().postDelayed(new Runnable() {
+            public void run() {
+                Log.i("loadBb", "does run !");
+                final String bottombar_backgroundColorTag = navEntityList.get( indexOfNavMenuItem ).bottombar_backgroundColorTag;
+                if( !bottombar_backgroundColorTag.equalsIgnoreCase("none") ) { //my convention
+                    activity.runOnUiThread( new Runnable() {
+                        @Override
+                        public void run() {
+                            activity.bottomNavigationView.setVisibility(BottomNavigationView.VISIBLE);
+                        }
+                    });
+                    Log.i("loadBb", "showing bb of " + indexOfNavMenuItem);
+                    if( setAll ) {
+                        activity.runOnUiThread( new Runnable() {
+                            @Override
+                            public void run() {
+                                activity.setBottomBarBackgroundColor(bottombar_backgroundColorTag);
+                            }
+                        });
+                        addBbItems( indexOfNavMenuItem );
+                    }
+                } else {
+                    activity.runOnUiThread( new Runnable() {
+                        @Override
+                        public void run() {
+                            activity.bottomNavigationView.setVisibility(BottomNavigationView.INVISIBLE);
+                        }
+                    });
+                    Log.i("loadBb", "hiding bb of " + indexOfNavMenuItem);
+                }
+            }
+
+            private void addBbItems( final int indexOfNavMenuItem ) {
+                //now removing UI tabs (if any) of index 1 and on
+                activity.runOnUiThread( new Runnable() {
+                    @Override
+                    public void run() {
+                        activity.bottomNavOperations.keepOnly1Item();
+                    }
+                });
+
+                String bottomBarTableName = generateBbTableName( indexOfNavMenuItem );
+                Cursor cursor_bb = db.query("SELECT * FROM '" + bottomBarTableName + "'");
+                if( cursor_bb.moveToNext() ) { //this is the first item so we rename (instead of add)
+                    Log.i("loadBbItems", "first item ");
+                    final String navTitle = cursor_bb.getString( cursor_bb.getColumnIndex("title") );
+                    final String icon = cursor_bb.getString( cursor_bb.getColumnIndex("icon") );
+                    if( navTitle != null && !navTitle.equals("") ) { //must be true
+                        activity.runOnUiThread( new Runnable() {
+                            @Override
+                            public void run() {
+                                Log.i("loadBbItems", "first item ");
+                                activity.optionsMenu.renameBottomMenuItem(0, navTitle);
+                                if( icon != null && !icon.equals("") ) {
+                                    activity.bottomNavOperations.setIconOfCheckedMenuItem( icon, 0 );
+                                }
+                            }
+                        });
+                    }
+                }
 
 
+                //Now adding UI tabs from db
+                int index = 0;
+                while ( cursor_bb.moveToNext() ) { //this starts with the second item and on.
+                    final int index1 = ++index;
+                    Log.i("loadBbItems", "item index " + index);
+                    final String navTitle = cursor_bb.getString( cursor_bb.getColumnIndex("title") ); //index of column is 1 (but it's ok)
+                    final String icon = cursor_bb.getString( cursor_bb.getColumnIndex("icon") );
+                    if( navTitle != null && !navTitle.equals("") ) {
+                        activity.runOnUiThread( new Runnable() {
+                            @Override
+                            public void run() {
+                                Log.i("loadBbItems", "item index " + index1);
+                                activity.optionsMenu.addBottomMenuItem( navTitle );
+                                if( icon != null && !icon.equals("") ) {
+                                    activity.bottomNavOperations.setIconOfCheckedMenuItem( icon, index1 );
+                                }
+                            }
+                        });
+                    }
+                }
+                //I have to setchecked the first bottom item tab
+                activity.runOnUiThread( new Runnable() {
+                    @Override
+                    public void run() {
+                        activity.bottomMenu.getItem(0).setChecked(true);
+                    }
+                });
+            }
+        }, 100); //unfortunately needed.
+        Looper.loop();
+    }
+
+    private void loadTop3DotsColor(int navIndex) {
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        final NavEntity navEntity = navEntityList.get( navIndex );
+        activity.runOnUiThread( new Runnable() {
+            @Override
+            public void run() {
+                final String backgroundColorTag = navEntity.topBar_3dotsColorTag;
+
+                //ironically, we didn't need a 100 ms delay here ??
+                if( backgroundColorTag != null && !backgroundColorTag.equalsIgnoreCase("none") ) {
+                    activity.setTopBar3DotsColor( backgroundColorTag );
+                } else {
+                    activity.setTopBar3DotsColor( "colorWhite" );
+                }
+            }
+        });
+    }
+
+    private void loadTopTitleColor(int navIndex) {
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        final NavEntity navEntity = navEntityList.get( navIndex );
+        activity.runOnUiThread( new Runnable() {
+            @Override
+            public void run() {
+                final String backgroundColorTag = navEntity.topBar_titleColorTag;
+                //ironically, we didn't need a 100 ms delay here ??
+                if( backgroundColorTag != null && !backgroundColorTag.equalsIgnoreCase("none") ) {
+                    activity.setTopBarTitleColor( backgroundColorTag );
+                } else {
+                    activity.setTopBarTitleColor( "colorWhite" );
+                }
+            }
+        });
     }
 
     private void loadTopBarHamburgerColor(int navIndex) {
@@ -265,14 +402,14 @@ class DbOperations {
                     navEntity.title = activity.navMenu.getItem(0).getTitle().toString();
                     navEntity.index = 0;
                     navEntity.bottombar_backgroundColorTag = "colorWhite";
-                    activity.runOnUiThread(new Runnable() {
+                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() { //getMainLooper means it runs on the UI thread
                         @Override
                         public void run() {
                             activity.setBottomBarBackgroundColor( "colorWhite" );
                             activity.navOperations.setIconOfCheckedMenuItem( "ic_action_home", 0);
                             activity.optionsMenu.setFirstOptionsMenuIcon();
                         }
-                    });
+                    }, 100); //I delayed because setFirstOptionsMenuIcon contains something with the toolbar
                     navEntity.iconTag = "ic_action_home";
                     Log.i("Youssef", "before inserting the first navEntity");
                     permanentDao.insertNav( navEntity );
@@ -322,31 +459,6 @@ class DbOperations {
         });
     }
 
-    void loadBb( final int indexOfNavMenuItem, final boolean setColor ) {
-        final List<NavEntity> navEntityList = permanentDao.getAllNav();
-        activity.runOnUiThread( new Runnable() {
-            @Override
-            public void run() {
-                new Handler().postDelayed(new Runnable() {
-                    public void run() {
-                        final String bottombar_backgroundColorTag = navEntityList.get( indexOfNavMenuItem ).bottombar_backgroundColorTag;
-                        if( bottombar_backgroundColorTag == null ||
-                                !bottombar_backgroundColorTag.equalsIgnoreCase("none") ) { //my convention
-                            activity.bottomNavigationView.setVisibility(BottomNavigationView.VISIBLE);
-                            Log.i("Youssef", "showing bb of " + indexOfNavMenuItem);
-                            if( bottombar_backgroundColorTag != null && setColor ) {
-                                activity.setBottomBarBackgroundColor( bottombar_backgroundColorTag );
-                            }
-                        } else if( bottombar_backgroundColorTag.equalsIgnoreCase("none") ) {
-                            activity.bottomNavigationView.setVisibility(BottomNavigationView.INVISIBLE);
-                            Log.i("Youssef", "hiding bb of " + indexOfNavMenuItem);
-                        }
-                    }
-                }, 100); //unfortunately needed.
-            }
-        });
-    }
-
     void setNameOfNavItem( final int indexOfNavMenuItem, final String name ) {
         new Thread() { //opening the database needs to be on a separate thread.
             public void run() {
@@ -359,16 +471,16 @@ class DbOperations {
     }
 
     void setBbBackgroundColorTag( final int indexOfNavMenuItem, final String bottombar_backgroundColorTag ) {
-        Log.i("Youssef", "in setBbBackgroundColorTag, of " + indexOfNavMenuItem + " to tag "
+        Log.i("setBbBackgroundColor", "in setBbBackgroundColorTag, of " + indexOfNavMenuItem + " to tag "
                 + bottombar_backgroundColorTag);
         final List<NavEntity> navEntityList = permanentDao.getAllNav();
-        Log.i("Youssef", "in setBbBackgroundColorTag. position 1");
+        Log.i("setBbBackgroundColor", "in setBbBackgroundColorTag. position 1");
         NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
-        Log.i("Youssef", "in setBbBackgroundColorTag. position 2");
+        Log.i("setBbBackgroundColor", "in setBbBackgroundColorTag. position 2");
         navEntity.bottombar_backgroundColorTag = bottombar_backgroundColorTag;
-        Log.i("Youssef", "in setBbBackgroundColorTag. position 3");
+        Log.i("setBbBackgroundColor", "in setBbBackgroundColorTag. position 3");
         permanentDao.updateNav( navEntity ); //this might cause sometimes a silent error, such that the statements after it don't work
-        Log.i("Youssef", "in setBbBackgroundColorTag, just to make sure : " +
+        Log.i("setBbBackgroundColor", "in setBbBackgroundColorTag, just to make sure : " +
                 permanentDao.getAllNav().get(indexOfNavMenuItem).bottombar_backgroundColorTag );
     }
 
@@ -382,6 +494,20 @@ class DbOperations {
         final List<NavEntity> navEntityList = permanentDao.getAllNav();
         NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
         navEntity.topBar_hamburgerColorTag = tag;
+        permanentDao.updateNav( navEntity );
+    }
+
+    void setTopBarTitleColorTag( int indexOfNavMenuItem, String tag) {
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
+        navEntity.topBar_titleColorTag = tag;
+        permanentDao.updateNav( navEntity );
+    }
+
+    void setTopBar3DotsColorTag(int indexOfNavMenuItem, String tag) {
+        final List<NavEntity> navEntityList = permanentDao.getAllNav();
+        NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
+        navEntity.topBar_3dotsColorTag = tag;
         permanentDao.updateNav( navEntity );
     }
 
@@ -421,9 +547,9 @@ class DbOperations {
     private void deleteTable( final String tableName ) {
         db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
         try {
-            Log.i("Youssef", "before deleting table " + tableName );
+            Log.i("deleteTable", "before deleting table " + tableName );
             db.execSQL("DROP TABLE IF EXISTS " + tableName + ";");
-            Log.i("Youssef", "after deleting table " + tableName );
+            Log.i("deleteTable", "after deleting table " + tableName );
             db.setTransactionSuccessful(); //to commit
         } catch(Exception e) {
             activity.runOnUiThread(new Runnable() {
@@ -441,11 +567,163 @@ class DbOperations {
         List<NavEntity> navEntityList = permanentDao.getAllNav();
         NavEntity navEntity = navEntityList.get( nav_menuitem_index );
         navEntity.iconTag  = tag;
-        Log.i("Youssef", "nav icon is set in db for " + nav_menuitem_index );
+        Log.i("setIconNav", "nav icon is set in db for " + nav_menuitem_index );
         permanentDao.updateNav( navEntity );
     }
 
-//##########################################################################################################################
+    void setIconOfCheckedBottomNavMenuItem( String tag, int navIndex ) {
+        db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
+        final String bottomBarTableName = generateBbTableName( navIndex );
+        try {
+            ContentValues contentValues = new ContentValues();
+            //contentValues.put( "uid", 0);
+            //contentValues.put( "title", "Option 1");
+            //contentValues.put( "index1", 0 );
+            contentValues.put( "icon", tag );
+            final int bottomNavTab = activity.bottomNavOperations.getCheckedItemOrder();
+            Log.i("setIcon", "bottomNavTab = " + bottomNavTab );
+            int rowsUpdated = db.update( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues, "index1 = ?", //don't say "WHERE" before "index1 = ?", it's already there
+                    new String[]{ String.valueOf( bottomNavTab ) } );
+            Log.i("setIcon", "rows updated = " + rowsUpdated);
+            if( rowsUpdated == 0 ) {//must not happen
+                Log.i("setIcon", "failed to update");
+            }
+/*
+            Cursor cursor_bb = db.query("SELECT 'uid' FROM '" + bottomBarTableName + "' WHERE index1 = ? ",
+                    new String[]{ String.valueOf(activity.bottomNavOperations.getCheckedItemOrder() ) } ); //'uid', 'title', 'index1', 'icon'
+            //SupportSQLiteQuery
+            if( cursor_bb.getCount() > 0 && cursor_bb.moveToNext() ) { //we have to find it
+
+                cursor_bb.getInt( cursor_bb.getColumnIndex("uid") )
+
+            } else {
+                Log.i("setIcon", "We haven't gotten the row instance");
+            }
+ */
+            db.setTransactionSuccessful(); //to commit
+        } catch(Exception e) {
+            Log.e("setIcon", "I got an error", e);
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                }
+            });
+        } finally {
+            db.endTransaction();
+        }
+    }
+    void addBottomMenuItem( final int navIndex, final String userInputText ) {
+        db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
+        final String bottomBarTableName = generateBbTableName( navIndex );
+        try {
+            Cursor cursor_bb = db.query("SELECT * FROM '" + bottomBarTableName + "'");
+            if( cursor_bb.getCount() != 0 ) { //must be true
+                ContentValues contentValues = new ContentValues();
+                //contentValues.put( "uid", 0);
+                contentValues.put( "title", userInputText);
+                cursor_bb.moveToLast();
+                final int bottomIndex = cursor_bb.getInt( cursor_bb.getColumnIndex("index1") ) + 1;
+                contentValues.put( "index1", bottomIndex );
+                //contentValues.put( "icon", tag );
+                //I guess "icon" will be null, and it's fine to be null.
+                db.insert( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues ); //returns -1 if failure. https://developer.android.com/reference/androidx/sqlite/db/SupportSQLiteDatabase
+                db.execSQL("CREATE TABLE IF NOT EXISTS " + generateBottomNavContentTableName( navIndex, bottomIndex ) + " ( " +
+                        "uid INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "type TEXT, " +
+                        "content TEXT);");
+            }
+            db.setTransactionSuccessful(); //to commit
+        } catch(Exception e) {
+            Log.e("setIcon", "I got an error", e);
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                }
+            });
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    void renameBottomMenuItem( final String userInputText ) {
+        db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
+        final String bottomBarTableName = generateBbTableName( activity.navOperations.getCheckedItemOrder() );
+        try {
+            ContentValues contentValues = new ContentValues();
+            //contentValues.put( "uid", 0);
+            contentValues.put( "title", userInputText);
+            //contentValues.put( "index1", 0 );
+            //contentValues.put( "icon", tag );
+            int rowsUpdated = db.update( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues, "index1 = ?",
+                    new String[]{ String.valueOf(activity.bottomNavOperations.getCheckedItemOrder() ) } );
+            Log.i("renameBottom..", "rows updated = " + rowsUpdated);
+            if( rowsUpdated == 0 ) {//must not happen
+                Log.i("renameBottom..", "failed to update");
+            }
+            db.setTransactionSuccessful(); //to commit
+        } catch(Exception e) {
+            Log.e("renameBottom..", "I got an error", e);
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                }
+            });
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    void deleteBottomMenuItem() {
+        db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
+        final int navIndex = activity.navOperations.getCheckedItemOrder();
+        final int bottomIndex = activity.bottomNavOperations.getCheckedItemOrder();
+        final String bottomBarTableName = generateBbTableName( navIndex );
+        try {
+            int rowsDeleted = db.delete( bottomBarTableName,"index1 = ?",
+                    new String[]{ String.valueOf( bottomIndex ) } );
+            Log.i("deleteBottom..", "rows deleted = " + rowsDeleted );
+            if( rowsDeleted == 0 ) { //must not happen
+                Log.i("deleteBottom..", "failed to delete");
+            }
+            concatenateBottomItemIndexes( bottomIndex, bottomBarTableName );
+            db.execSQL("DROP TABLE IF EXISTS " + generateBottomNavContentTableName( navIndex, bottomIndex ) + ";");
+
+            db.setTransactionSuccessful(); //to commit
+        } catch(Exception e) {
+            Log.e("setIcon", "I got an error", e);
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                }
+            });
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    private void concatenateBottomItemIndexes( final int bottomIndex, final String bottomBarTableName ) {
+        Cursor cursor_bb = db.query("SELECT * FROM '" + bottomBarTableName + "'");
+        for( int i = bottomIndex ; i < cursor_bb.getCount() ; i++ ) { //I have deleted a row, this is why it's not "i < cursor_bb.getCount() - 1"
+            Log.i("concatenateBottom..", "i = " + i);
+            ContentValues contentValues = new ContentValues();
+            //contentValues.put( "uid", 0);
+            //contentValues.put( "title", userInputText);
+            contentValues.put( "index1", i );
+            //contentValues.put( "icon", tag );
+            int rowsUpdated = db.update( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues, "index1 = ?",
+                    new String[]{ String.valueOf( i + 1 ) } );
+            Log.i("concatenateBottom..", "rows updated = " + rowsUpdated);
+            if( rowsUpdated == 0 ) {//must not happen
+                Log.i("concatenateBottom..", "failed to update");
+            }
+        }
+    }
+
+    //##########################################################################################################################
 //####################### Nav Header Stuff #################################################################################
 //##########################################################################################################################
     void loadNavHeaderStuff() {
@@ -592,6 +870,5 @@ class DbOperations {
             }
         } ).start();
     }
-
 
 }

@@ -193,6 +193,11 @@ public class MainActivity extends AppCompatActivity {
             }.start();
         } else if( menu.equals("bottom nav menu") ) {
             bottomNavOperations.setIconOfCheckedMenuItem( tag, bottomNavOperations.getCheckedItemOrder() );
+            new Thread() { //opening the database needs to be on a separate thread.
+                public void run() {
+                    dbOperations.setIconOfCheckedBottomNavMenuItem( tag, nav_menuitem_index );
+                }
+            }.start();
         }
     }
 
@@ -329,6 +334,22 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 //Log.i("Youssef", "Setting BB background color of " + navIndex  + " to " + tag);
                 dbOperations.setTopBarHamburgerColorTag( indexOfNavMenuItem, tag );
+            }
+        }.start();
+    }
+
+    public void setTopBarTitleColorInDb( final int indexOfNavMenuItem, final String tag) {
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                dbOperations.setTopBarTitleColorTag( indexOfNavMenuItem, tag );
+            }
+        }.start();
+    }
+
+    public void setTopBar3DotsColorInDb( final int indexOfNavMenuItem, final String tag) {
+        new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                dbOperations.setTopBar3DotsColorTag( indexOfNavMenuItem, tag );
             }
         }.start();
     }

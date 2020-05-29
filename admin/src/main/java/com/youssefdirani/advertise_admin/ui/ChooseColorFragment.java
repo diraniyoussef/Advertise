@@ -57,9 +57,11 @@ public class ChooseColorFragment extends Fragment {
                             break;
                         case "top bar title color":
                             activity.setTopBarTitleColor( tag );
+                            activity.setTopBarTitleColorInDb( indexOfNavMenuItem, tag );
                             break;
                         case "top bar 3-dots color":
                             activity.setTopBar3DotsColor( tag );
+                            activity.setTopBar3DotsColorInDb( indexOfNavMenuItem, tag );
                             break;
                         case "bottom bar background color":
                             //Log.i("Youssef", "inside ChooseColorFragment : position 1");

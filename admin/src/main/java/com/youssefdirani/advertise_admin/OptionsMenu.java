@@ -117,9 +117,19 @@ class OptionsMenu {
                 }
                 return true;
             case R.id.bottombar_deletetab:
+                if( bottomMenu.size() == 1 ) {
+                    Toast.makeText( activity, "Can't remove the last Item.",
+                            Toast.LENGTH_LONG ).show();
+                    return false;
+                }
                 checkedItemOrder = activity.bottomNavOperations.getCheckedItemOrder();
                 if( checkedItemOrder != -1 ) {
                     bottomMenu.removeItem( bottomMenu.getItem( checkedItemOrder ).getItemId() );
+                    (new Thread() { //opening the database needs to be on a separate thread.
+                        public void run() {
+                            activity.dbOperations.deleteBottomMenuItem();
+                        }
+                    }).start();
                     Toast.makeText( activity, "Bottom menu item is removed successfully",
                             Toast.LENGTH_LONG ).show();
                 }
@@ -213,11 +223,16 @@ class OptionsMenu {
         builder.setPositiveButton("Rename", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                String userInputText = input.getText().toString();
+                final String userInputText = input.getText().toString();
                 if( isUserInputTextNotFine( userInputText ) ) {
                     return;
                 }
                 selectedMenuItem.setTitle( userInputText );
+                (new Thread() { //opening the database needs to be on a separate thread.
+                    public void run() {
+                        activity.dbOperations.renameBottomMenuItem( userInputText );
+                    }
+                }).start();
             }
         });
 
@@ -231,10 +246,10 @@ class OptionsMenu {
         builder.show();
     }
 
-    final int[] BottomNavFragmentId = { R.id.navigation_bottom_1, R.id.navigation_bottom_2,
+    private final int[] BottomNavFragmentId = { R.id.navigation_bottom_1, R.id.navigation_bottom_2,
             R.id.navigation_bottom_3, R.id.navigation_bottom_4 };
 
-    void createMenuItem_AlertDialog() {
+    private void createMenuItem_AlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         builder.setTitle("Please enter the name of the new window");
 
@@ -255,34 +270,18 @@ class OptionsMenu {
 
                 //Now creating the new menuItem
                 //int idOfNewMenuItem = FragmentId[ menu.size() - 2 ]; //2 because we have the Home and the add-new-item menu items
-                final int id;
-                //adding a bottom bar menu item. Actually it's making an item visible again
-                id = getAFreeId( BottomNavFragmentId, false, bottomMenu );
-                bottomMenu.add( R.id.bottombar_menuitems, id,
-                        bottomMenu.getItem(bottomMenu.size() - 1 ).getOrder() + 1, userInputText )
-                        .setChecked(true);
+                addBottomMenuItem( userInputText );
+                (new Thread() { //opening the database needs to be on a separate thread.
+                    public void run() {
+                        activity.dbOperations.addBottomMenuItem( activity.navOperations.getCheckedItemOrder(), userInputText );
+                    }
+                }).start();
                 Toast.makeText(activity, "Bottom navigation menu item is successfully added.",
                         Toast.LENGTH_LONG).show();
 
             }
 
-            private int getAFreeId( int[] FragmentId, boolean isNavNotBottomNav, Menu navMenu ) { //that has not been used in any of the menu items
-                final int size;
-                size = bottomMenu.size();
-                for (int fragmentId : FragmentId) {
-                    ////Log.i("getAFreeId", "FragmentId[j] " + fragmentId );
-                    int i;
-                    for (i = 0; i < size; i++) {
-                        if( navMenu.getItem(i).getItemId() == fragmentId ) {
-                            break;
-                        }
-                    }
-                    if (i == size) { //id not used
-                        return fragmentId;
-                    }
-                }
-                return 0; //should not be reached
-            }
+
         });
 
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -293,6 +292,34 @@ class OptionsMenu {
         });
 
         builder.show();
+    }
+    private int getAFreeId( int[] FragmentId, Menu navMenu ) { //that has not been used in any of the menu items
+        final int size;
+        size = bottomMenu.size();
+        for (int fragmentId : FragmentId) {
+            ////Log.i("getAFreeId", "FragmentId[j] " + fragmentId );
+            int i;
+            for (i = 0; i < size; i++) {
+                if( navMenu.getItem(i).getItemId() == fragmentId ) {
+                    break;
+                }
+            }
+            if (i == size) { //id not used
+                return fragmentId;
+            }
+        }
+        return 0; //should not be reached
+    }
+    void addBottomMenuItem( String userInputText ) {
+        final int id;
+        //adding a bottom bar menu item. Actually it's making an item visible again
+        id = getAFreeId( BottomNavFragmentId, bottomMenu );
+        bottomMenu.add( R.id.bottombar_menuitems, id,
+                bottomMenu.getItem(bottomMenu.size() - 1 ).getOrder() + 1, userInputText )
+                .setChecked(true);
+    }
+    void renameBottomMenuItem( final int bottomMenuItemIndex, String userInputText ) {
+        bottomMenu.getItem( bottomMenuItemIndex ).setTitle( userInputText );
     }
 
     private boolean isUserInputTextNotFine( @org.jetbrains.annotations.NotNull String userInputText ) {

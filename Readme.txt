@@ -6,3 +6,7 @@ The middle will also be an intermedite server with its own SQLite database.
 Ideally, admin writes to his database and (then) updates the middle database and (then) the intermediate server will update the admin's client database.
 
 The client's database is for the case where the client didn't opened the app but didn't have internet connection.
+
+I'm sort of have to know the admin personally so I can give him this service. The key in my hand is the publishing of his desired client app in the play store, with the name and icon he wishes which I assign for him.
+
+Go ahead, it's open source. modify it as you want.
