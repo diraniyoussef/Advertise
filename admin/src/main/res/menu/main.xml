@@ -7,10 +7,12 @@
 
         <item
             android:id="@+id/homenavigationitem_mainmenuitem"
+            android:visible="false"
             android:icon="@drawable/ic_home_black_24dp"
             android:title="@string/home_title"
             app:showAsAction="ifRoom" />
-        <!--android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
+        <!--
+            android:name="com.youssefdirani.navmenu_admin.ui.HomeFragment"
             tools:layout="@layout/fragment_home"
             These 2 didn't work. They don't belong here anyway-->
         <item

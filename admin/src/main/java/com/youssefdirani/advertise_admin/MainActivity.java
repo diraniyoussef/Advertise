@@ -6,6 +6,7 @@ import android.graphics.PorterDuff;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -107,6 +108,22 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public void setFirstOptionsMenuIcon() { //reason of why is this needed : when we get back from another fragment like set icon e.g., the icon shows by default (which we don't always want)
+        Log.i("set icon", "before setFirstOptionsMenuIcon");
+        optionsMenu.setFirstOptionsMenuIcon();
+        /*
+        new Handler(Looper.getMainLooper()).postDelayed(
+                new Runnable() {
+                    public void run() {
+                        Log.i("set icon", "before setFirstOptionsMenuIcon");
+                        optionsMenu.setFirstOptionsMenuIcon();
+                    }
+                }, 20); //unfortunately needed.
+
+         */
+        Log.i("Youssef", "after setFirstOptionsMenuIcon handler");
+    }
+
     //Called when the user presses on the stack navigation icon in order to navigate https://developer.android.com/reference/android/support/v7/app/AppCompatActivity#onSupportNavigateUp()
     @Override
     public boolean onSupportNavigateUp() {
@@ -124,7 +141,9 @@ public class MainActivity extends AppCompatActivity {
         toolbar.getMenu().setGroupVisible( R.id.optionsmenu_actionitemgroup,true );
         new Thread() { //opening the database needs to be on a separate thread.
             public void run() {
+                Looper.prepare();
                 dbOperations.loadBb( indexOfNavMenuItem, false ); //we need to get it from the database to know whether  to show it or not.
+                Looper.loop();
             }
         }.start();
     }
@@ -149,7 +168,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.i("Youssef", "inside MainActivity : onResume");
-
     }
 
     @Override
@@ -181,9 +199,11 @@ public class MainActivity extends AppCompatActivity {
 
     public void setLayoutColor( int linearlayout_id, final String tag ) {
         navOperations.setLayoutColor( linearlayout_id, tag );
+        dbOperations.saveNavHeaderBackgroundColor( tag );//saving into the database
     }
 
     public void setIconOfCheckedMenuItem( final String tag, final int nav_menuitem_index, String menu ) {
+        Log.i("setIcon..", "item index is " + nav_menuitem_index);
         if( menu.equals("nav menu") ) {
             navOperations.setIconOfCheckedMenuItem( tag, nav_menuitem_index);
             new Thread() { //opening the database needs to be on a separate thread.
@@ -312,7 +332,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void setStatusBarIconTintMenuItem( final boolean isChecked ) {
-        new Handler().postDelayed(new Runnable() {
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             public void run() {
                 final MenuItem menuItem = toolbar.getMenu().findItem(R.id.statusbar_icontint);
                 menuItem.setChecked( isChecked ); //redundant in case the user clicked, but needed in case the user navigates and tint is set from database e.g.

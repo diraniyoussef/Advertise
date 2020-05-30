@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Looper;
 import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
@@ -322,7 +323,7 @@ class NavOperations {
         }
         return -1;
     }
-    private int getNavMenuItemsCount() { //will always be menu.size() - 1, according to the structure of activity_main_drawer.xml file
+    int getNavMenuItemsCount() { //will always be menu.size() - 1, according to the structure of activity_main_drawer.xml file
         int count = 0;
         //Log.i("Youssef", "menu size is " + navMenu.size() );
         for( int i = 0; i < navMenu.size(); i++ ) { //going till i < menu.size() - 1 is also fine, but anyway.
@@ -492,13 +493,15 @@ class NavOperations {
 
     void setIconOfCheckedMenuItem( String tag, int indexOfNavMenuItem ) {
         if( tag == null ) {
+            Log.i("setIcon..", "in navOperations - tag is null. indexOfNavMenuItem is " + indexOfNavMenuItem);
             return;
         }
         if( tag.equalsIgnoreCase("ic_no_icon") ) {
+            Log.i("setIcon..", "in navOperations - it was no icon. indexOfNavMenuItem is " + indexOfNavMenuItem);
             MenuItem menuItem = navMenu.getItem( indexOfNavMenuItem );
             menuItem.setIcon(0);
             if( indexOfNavMenuItem == 0 ) {
-                new Handler().postDelayed(
+                new Handler(Looper.getMainLooper()).postDelayed(
                     new Runnable() {
                         public void run() {
                             activity.optionsMenu.setFirstOptionsMenuIcon();
@@ -511,8 +514,9 @@ class NavOperations {
         int icon_drawable_id = activity.getResources().getIdentifier( tag, "drawable", activity.getPackageName() );
         Drawable icon = activity.getResources().getDrawable( icon_drawable_id );
         navMenu.getItem( indexOfNavMenuItem ).setIcon( icon );
+        Log.i("setIcon..", "in navOperations - we have an icon now. indexOfNavMenuItem is " + indexOfNavMenuItem);
         if( indexOfNavMenuItem == 0 ) {
-            new Handler().postDelayed(
+            new Handler(Looper.getMainLooper()).postDelayed(
                 new Runnable() {
                     public void run() {
                         activity.optionsMenu.setFirstOptionsMenuIcon();
@@ -563,8 +567,6 @@ class NavOperations {
         LinearLayout linearLayout = activity.findViewById( linearlayout_id );
         int color_id = activity.getResources().getIdentifier( tag, "color", activity.getPackageName() );
         linearLayout.setBackgroundColor( activity.getResources().getColor( color_id ) );
-        //saving into the database
-        activity.dbOperations.saveNavHeaderBackgroundColor( tag );
     }
 
     boolean onSupportNavigateUp() {

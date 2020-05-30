@@ -40,11 +40,12 @@ class DbOperations {
                 NavEntity navEntity = new NavEntity();
                 navEntity.title = title;
                 navEntity.bottombar_backgroundColorTag = "colorWhite"; //background color to white. This is my default
+                navEntity.iconTag = "ic_no_icon";
                 List<NavEntity> navEntityList = permanentDao.getAllNav();
                 navEntity.index = navEntityList.size(); //it's my convention to preserve throughout the app the order of indexes
                 permanentDao.insertNav( navEntity );
-                setBottomBarTableAndFirstBottomNavContentTable( activity.navOperations.getCheckedItemOrder() + 1 ); //getCheckedItemOrder still returns the old value
-
+                Log.i("addNavRecord", "about to create tables for index " + navEntity.index);
+                setBottomBarTableAndFirstBottomNavContentTable( navEntity.index ); //getCheckedItemOrder still returns the old value
 
             }
         }.start();
@@ -68,19 +69,66 @@ class DbOperations {
                 //Log.i("Youssef", "inside DbOperations : adding a nav entity.");
                 List<NavEntity> navEntityList = permanentDao.getAllNav();
                 NavEntity navEntity = navEntityList.get( index );
-                concatenateNavTableIndices( index ); //fixing the index of the records in nav table
+                final int originalNavSize = navEntityList.size();
+                concatenateNavTableIndices( index, originalNavSize ); //fixing the index of the records in nav table
                 Log.i("Youssef", "before deleting nav entity from database");
                 permanentDao.deleteNavEntity( navEntity );
                 Log.i("Youssef", "after deleting nav entity from database");
                 deleteBbTable();
                 deleteBottomNavContentTablesButKeepUpTo(-1);
+                renameTables( index, originalNavSize );
             }
-            void concatenateNavTableIndices( int startingIndex ) {//should be called whenever an entity is deleted (except for the last entity).
+
+            private void renameTables( final int startingIndex, final int originalNavSize ) {
+                if( startingIndex < originalNavSize - 1 ) { //startingIndex is passed such that it corresponds for the just deleted element
+                    db.beginTransaction();
+                    try {
+                        for( int i = startingIndex ; i < originalNavSize - 1 ; i++ ) {
+                            String oldBottomBarTableName = generateBbTableName( i + 1 );
+                            Cursor cursor_bb = db.query("SELECT * FROM '" + oldBottomBarTableName + "'");
+                            for( int j = 0 ; j < cursor_bb.getCount() ; j++ ) {
+                                String oldBottomNavContentTableName = generateBottomNavContentTableName( i + 1, j );
+                                String newBottomNavContentTableName = generateBottomNavContentTableName( i , j );
+                                db.execSQL("ALTER TABLE " + oldBottomNavContentTableName + " RENAME TO " + newBottomNavContentTableName + ";");
+                            }
+                            String newBottomBarTableName = generateBbTableName( i );
+                            db.execSQL("ALTER TABLE " + oldBottomBarTableName + " RENAME TO " + newBottomBarTableName + ";");
+                        }
+                        db.setTransactionSuccessful(); //to commit
+                    } catch(Exception e) {
+                        activity.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Log.i("error", "position 0.");
+                                activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                            }
+                        });
+                    } finally {
+                        db.endTransaction();
+                    }
+                }
+            }
+/*
+            private boolean isTableExists( String tableName ) {
+                String query = "select DISTINCT tbl_name from sqlite_master where tbl_name = '"+tableName+"'";
+                try {
+                    Cursor cursor = db.query(query, null);
+                    if(cursor!=null) {
+                        return cursor.getCount() > 0;
+                    }
+                    return false;
+                } catch(Exception e) {
+                    Log.i("isTableExists", "Table " + tableName + " does not exist.");
+                    return false;
+                }
+            }
+ */
+
+            private void concatenateNavTableIndices( final int startingIndex, final int originalNavSize ) {//should be called whenever an entity is deleted (except for the last entity).
                 //finally it's ok to have e.g. 4 elements like the following indices 0 3 1 2
-                List<NavEntity> navEntityList = permanentDao.getAllNav();
-                if( startingIndex < navEntityList.size() ) { //startingIndex is passed such that it corresponds for the just deleted element
-                    Log.i("Youssef", "concatenateNavTableIndices. size of navEntityList = " + navEntityList.size());
-                    for( int i = startingIndex ; i < navEntityList.size() - 1 ; i++ ) {
+                if( startingIndex < originalNavSize - 1 ) { //startingIndex is passed such that it corresponds for the just deleted element
+                    Log.i("Youssef", "concatenateNavTableIndices. size of navEntityList = " + originalNavSize);
+                    for( int i = startingIndex ; i < originalNavSize - 1 ; i++ ) {
                         Log.i("Youssef", "concatenateNavTableIndices. i = " + i);
                         NavEntity navEntity = permanentDao.getNav(i + 1 );
                         navEntity.index = i;
@@ -89,6 +137,106 @@ class DbOperations {
                 }
             }
         }.start();
+    }
+
+    void switchNavItems_Upwards( final int lowerItemOrder ) { //lowerItemOrder is the old lower item index. By lower I mean lower in position (thus higher in index)
+        ( new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                final List<NavEntity> navEntityList = permanentDao.getAllNav();
+                NavEntity navEntity2 = navEntityList.get( lowerItemOrder );
+                NavEntity navEntity1 = navEntityList.get( lowerItemOrder - 1 );
+
+                db.beginTransaction();
+                try {
+                    String oldBottomBarTableName = generateBbTableName( lowerItemOrder );
+                    int intermediateItemOrder = 1000;
+                    String intermediateBottomBarTableName = generateBbTableName( intermediateItemOrder );
+                    String newBottomBarTableName = generateBbTableName( lowerItemOrder - 1 );
+                    boolean oldBbExists, newBbExists;
+
+                    int oldBottomNavContentTableCount;
+                    Cursor cursor_bb;
+                    if( navEntity2.bottombar_backgroundColorTag.equals("none") ) {
+                        oldBottomNavContentTableCount = 1;
+                        oldBbExists = false;
+                    } else {
+                        cursor_bb = db.query("SELECT * FROM '" + oldBottomBarTableName + "'");
+                        oldBottomNavContentTableCount = cursor_bb.getCount();
+                        oldBbExists = true;
+                    }
+                    int newBottomNavContentTableCount;
+                    if( navEntity1.bottombar_backgroundColorTag.equals("none") ) {
+                        newBottomNavContentTableCount = 1;
+                        newBbExists = false;
+                    } else {
+                        cursor_bb = db.query("SELECT * FROM '" + newBottomBarTableName + "'");
+                        newBottomNavContentTableCount = cursor_bb.getCount();
+                        newBbExists = true;
+                    }
+
+                    Log.i("switchNavItems_Upwards", "First try");
+                    for( int j = 0 ; j < oldBottomNavContentTableCount ; j++ ) {
+                        String oldBottomNavContentTableName = generateBottomNavContentTableName( lowerItemOrder, j );
+                        String intermediateBottomNavContentTableName = generateBottomNavContentTableName( intermediateItemOrder , j );
+                        Log.i("switchNavItems_Upwards", oldBottomNavContentTableName + " to " + intermediateBottomNavContentTableName);
+                        db.execSQL("ALTER TABLE " + oldBottomNavContentTableName + " RENAME TO " + intermediateBottomNavContentTableName + ";");
+                    }
+                    if( oldBbExists ) {
+                        Log.i("switchNavItems_Upwards", oldBottomBarTableName + " to " + intermediateBottomBarTableName);
+                        db.execSQL("ALTER TABLE " + oldBottomBarTableName + " RENAME TO " + intermediateBottomBarTableName + ";");
+                    }
+
+                    Log.i("switchNavItems_Upwards", "Second try");
+                    for( int j = 0 ; j < newBottomNavContentTableCount ; j++ ) {
+                        String oldBottomNavContentTableName = generateBottomNavContentTableName( lowerItemOrder, j );
+                        String newBottomNavContentTableName = generateBottomNavContentTableName( lowerItemOrder - 1, j );
+                        Log.i("switchNavItems_Upwards", newBottomNavContentTableName + " to " + oldBottomNavContentTableName);
+                        db.execSQL("ALTER TABLE " + newBottomNavContentTableName + " RENAME TO " + oldBottomNavContentTableName + ";");
+                    }
+                    if( newBbExists ) {
+                        Log.i("switchNavItems_Upwards", newBottomBarTableName + " to " + oldBottomBarTableName);
+                        db.execSQL("ALTER TABLE " + newBottomBarTableName + " RENAME TO " + oldBottomBarTableName + ";");
+                    }
+
+                    Log.i("switchNavItems_Upwards", "Third try");
+                    for( int j = 0 ; j < oldBottomNavContentTableCount ; j++ ) {
+                        String intermediateBottomNavContentTableName = generateBottomNavContentTableName( intermediateItemOrder, j );
+                        String newBottomNavContentTableName = generateBottomNavContentTableName( lowerItemOrder - 1, j );
+                        Log.i("switchNavItems_Upwards", intermediateBottomNavContentTableName + " to " + newBottomNavContentTableName);
+                        db.execSQL("ALTER TABLE " + intermediateBottomNavContentTableName + " RENAME TO " + newBottomNavContentTableName + ";");
+                    }
+                    if( oldBbExists ) {
+                        Log.i("switchNavItems_Upwards", intermediateBottomBarTableName + " to " + newBottomBarTableName);
+                        db.execSQL("ALTER TABLE " + intermediateBottomBarTableName + " RENAME TO " + newBottomBarTableName + ";");
+                    }
+                    Log.i("switchNavItems_Upwards", "just before committing");
+                    db.setTransactionSuccessful();
+                } catch(Exception e) {
+                    activity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                            Log.i("error", "position 1.");
+                        }
+                    });
+                } finally {
+                    db.endTransaction();
+                }
+
+                //Now switching all columns but the index
+                int intermediateIndex = navEntity1.index;
+                navEntity1.index = navEntity2.index;
+                navEntity2.index = intermediateIndex;
+                int intermediateUId = navEntity1.uid;
+                navEntity1.uid = navEntity2.uid;
+                navEntity2.uid = intermediateUId;
+                //Log.i("switchNavItems","position 1");
+                permanentDao.updateNav( navEntity1 ); //the update is actually based on uid (consider it as a hidden argument)
+                //Log.i("switchNavItems","position 2");
+                permanentDao.updateNav( navEntity2 );
+                //Log.i("switchNavItems","position 3");
+            }
+        } ).start();
     }
 
     void onDestroy() {
@@ -114,6 +262,7 @@ class DbOperations {
                 @Override
                 public void run() {
                     activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                    Log.i("error", "position 2.");
                 }
             });
         } finally {
@@ -146,6 +295,7 @@ class DbOperations {
                 @Override
                 public void run() {
                     activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                    Log.i("error", "position 3.");
                 }
             });
         } finally {
@@ -174,18 +324,21 @@ class DbOperations {
     }
 
     void loadOnNavigate( final int navIndex ) { //have to load everything
+        Log.i("loadOnNavigate", "inside");
+        Looper.prepare(); //needed for some reason
         loadBb( navIndex, true );
         loadStatusBar( navIndex );
         loadTopBarBackgroundColor( navIndex );
         loadTopBarHamburgerColor( navIndex );
         loadTopTitleColor( navIndex );
+        Log.i("loadOnNavigate", "before loadTop3DotsColor");
         loadTop3DotsColor( navIndex );
-
+        Looper.loop();
     }
 
     void loadBb( final int indexOfNavMenuItem, final boolean setAll ) {
         final List<NavEntity> navEntityList = permanentDao.getAllNav();
-        Looper.prepare(); //needed for some reason
+        //Looper.prepare();
         new Handler().postDelayed(new Runnable() {
             public void run() {
                 Log.i("loadBb", "does run !");
@@ -230,7 +383,7 @@ class DbOperations {
                 String bottomBarTableName = generateBbTableName( indexOfNavMenuItem );
                 Cursor cursor_bb = db.query("SELECT * FROM '" + bottomBarTableName + "'");
                 if( cursor_bb.moveToNext() ) { //this is the first item so we rename (instead of add)
-                    Log.i("loadBbItems", "first item ");
+                    Log.i("loadBbItems", "first item of " + bottomBarTableName);
                     final String navTitle = cursor_bb.getString( cursor_bb.getColumnIndex("title") );
                     final String icon = cursor_bb.getString( cursor_bb.getColumnIndex("icon") );
                     if( navTitle != null && !navTitle.equals("") ) { //must be true
@@ -252,7 +405,7 @@ class DbOperations {
                 int index = 0;
                 while ( cursor_bb.moveToNext() ) { //this starts with the second item and on.
                     final int index1 = ++index;
-                    Log.i("loadBbItems", "item index " + index);
+                    Log.i("loadBbItems", "item index " + index + " of " + bottomBarTableName);
                     final String navTitle = cursor_bb.getString( cursor_bb.getColumnIndex("title") ); //index of column is 1 (but it's ok)
                     final String icon = cursor_bb.getString( cursor_bb.getColumnIndex("icon") );
                     if( navTitle != null && !navTitle.equals("") ) {
@@ -277,17 +430,18 @@ class DbOperations {
                 });
             }
         }, 100); //unfortunately needed.
-        Looper.loop();
+
     }
 
     private void loadTop3DotsColor(int navIndex) {
         final List<NavEntity> navEntityList = permanentDao.getAllNav();
         final NavEntity navEntity = navEntityList.get( navIndex );
+        Log.i("loadTop3DotsColor", "does run !");
         activity.runOnUiThread( new Runnable() {
             @Override
             public void run() {
+                Log.i("loadTop3DotsColor", "inside runOnUI");
                 final String backgroundColorTag = navEntity.topBar_3dotsColorTag;
-
                 //ironically, we didn't need a 100 ms delay here ??
                 if( backgroundColorTag != null && !backgroundColorTag.equalsIgnoreCase("none") ) {
                     activity.setTopBar3DotsColor( backgroundColorTag );
@@ -444,7 +598,7 @@ class DbOperations {
             @Override
             public void run() {
                 activity.navOperations.updateNavItem(0, navEntityList.get(0).title, navEntityList.get(0).iconTag );
-                new Handler().postDelayed(new Runnable() {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                     public void run() {
                         activity.updateToolbarTitle(0);
                     }
@@ -556,6 +710,7 @@ class DbOperations {
                 @Override
                 public void run() {
                     activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                    Log.i("error", "position 4.");
                 }
             });
         } finally {
@@ -607,6 +762,7 @@ class DbOperations {
                 @Override
                 public void run() {
                     activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                    Log.i("error", "position 5.");
                 }
             });
         } finally {
@@ -640,6 +796,7 @@ class DbOperations {
                 @Override
                 public void run() {
                     activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                    Log.i("error", "position 6.");
                 }
             });
         } finally {
@@ -669,6 +826,7 @@ class DbOperations {
                 @Override
                 public void run() {
                     activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                    Log.i("error", "position 7.");
                 }
             });
         } finally {
@@ -698,6 +856,7 @@ class DbOperations {
                 @Override
                 public void run() {
                     activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                    Log.i("error", "position 8.");
                 }
             });
         } finally {
@@ -839,6 +998,7 @@ class DbOperations {
                 @Override
                 public void run() {
                     activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                    Log.i("error", "position 9.");
                 }
             });
             return;
@@ -849,26 +1009,5 @@ class DbOperations {
 //##########################################################################################################################
 //#######################                  #################################################################################
 //##########################################################################################################################
-
-    void switchNavItems_Upwards( final int lowerItemOrder ) { //lowerItemOrder is the old lower item index
-        ( new Thread() { //opening the database needs to be on a separate thread.
-            public void run() {
-                final List<NavEntity> navEntityList = permanentDao.getAllNav();
-                NavEntity navEntity2 = navEntityList.get( lowerItemOrder );
-                NavEntity navEntity1 = navEntityList.get( lowerItemOrder - 1 );
-                int intermediateIndex = navEntity1.index;
-                navEntity1.index = navEntity2.index;
-                navEntity2.index = intermediateIndex;
-                int intermediateUId = navEntity1.uid;
-                navEntity1.uid = navEntity2.uid;
-                navEntity2.uid = intermediateUId;
-                //Log.i("switchNavItems","position 1");
-                permanentDao.updateNav( navEntity1 ); //the update is actually based on uid (consider it as a hidden argument)
-                //Log.i("switchNavItems","position 2");
-                permanentDao.updateNav( navEntity2 );
-                //Log.i("switchNavItems","position 3");
-            }
-        } ).start();
-    }
 
 }

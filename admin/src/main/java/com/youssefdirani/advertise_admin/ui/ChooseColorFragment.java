@@ -41,7 +41,7 @@ public class ChooseColorFragment extends Fragment {
                     switch( getArguments().getString("action") ) {
                         case "navigation layout background":
                             final int idOfLayout = getArguments().getInt("id_of_layout");
-                            activity.setLayoutColor( idOfLayout, tag );//this is same as saying setNavHeaderBackgroundColor
+                            activity.setLayoutColor( idOfLayout, tag );//this is same as saying setNavHeaderBackgroundColor. It has a database call within.
                             break;
                         case "status bar background color":
                             activity.setStatusBarColor( tag );
@@ -116,5 +116,6 @@ public class ChooseColorFragment extends Fragment {
             activity.updateToolbarTitle(indexOfNavMenuItem); //unfortunately needed.
         }
         activity.showOptionsMenuAndBottomMenu( indexOfNavMenuItem );
+        activity.setFirstOptionsMenuIcon();
     }
 }

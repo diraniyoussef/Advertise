@@ -97,6 +97,7 @@ public class ChooseMenuIconFragment extends Fragment {
             activity.updateToolbarTitle( indexOfNavMenuItem ); //unfortunately needed.
         }
         activity.showOptionsMenuAndBottomMenu( indexOfNavMenuItem );
+        activity.setFirstOptionsMenuIcon();
     }
 
 }

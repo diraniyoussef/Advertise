@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.InputType;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -403,12 +404,15 @@ class OptionsMenu {
     }
 
     void setFirstOptionsMenuIcon() { //it's because of the visibility thing, I  had to call it from ChooseMenuIconFragment as well
+        Log.i("setIcon..", "in setFirstOptionsMenuIcon");
         Drawable first_icon = activity.navMenu.getItem(0).getIcon();
         if( first_icon != null ) {
+            Log.i("setIcon..", "in setFirstOptionsMenuIcon. Not null");
             //Log.i("Youssef", "inside setFirstOptionsMenuIcon : icon is not null");
             activity.toolbar.getMenu().getItem(0).setVisible( true );
             activity.toolbar.getMenu().getItem(0).setIcon( first_icon );
         } else {
+            Log.i("setIcon..", "in setFirstOptionsMenuIcon. Null it is.");
             //Log.i("Youssef", "inside setFirstOptionsMenuIcon : icon is null");
             activity.toolbar.getMenu().getItem(0).setVisible( false ); //probably better than toolbar.getMenu().getItem(0).setIcon( 0 );
         }

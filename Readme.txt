@@ -10,3 +10,5 @@ The client's database is for the case where the client didn't opened the app but
 I'm sort of have to know the admin personally so I can give him this service. The key in my hand is the publishing of his desired client app in the play store, with the name and icon he wishes which I assign for him.
 
 Go ahead, it's open source. modify it as you want.
+
+Technically, for some reason of mine, the left side navigation items use a controller, but the bottom navigation menu items don't.

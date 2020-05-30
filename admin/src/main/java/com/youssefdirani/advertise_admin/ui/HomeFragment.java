@@ -1,6 +1,8 @@
 package com.youssefdirani.advertise_admin.ui;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -110,7 +112,6 @@ public class HomeFragment extends Fragment {
     public void onResume() {
         super.onResume();
         //activity.onStartUI();
-
         Log.i("Youssef", "inside HomeFragment : onResume");
     }
     @Override
