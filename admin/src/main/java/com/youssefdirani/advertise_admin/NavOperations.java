@@ -334,6 +334,7 @@ class NavOperations {
                 count++;
             }
         }
+        Log.i("Youssef", "getNavMenuItemsCount is " + count);
         return count;
     }
 
@@ -362,9 +363,10 @@ class NavOperations {
                                 return;
                             }
                             navMenu.removeItem( navMenu.getItem( checkedItemOrder ).getItemId() );
+                            activity.optionsMenu.setFirstOptionsMenuIcon();
                             activity.dbOperations.removeNavRecord( checkedItemOrder );
                             Log.i("Youssef", "Delete_Item");
-                            navigateToMenuItem( navMenu.getItem(0).getItemId(), navMenu.getItem(0).getTitle().toString() );
+                            navigateToMenuItem( navMenu.getItem(0).getItemId(), navMenu.getItem(0).getTitle().toString() ); //this may cause a problem, so it must be in 'removeNavRecord'. I had a workaround by calling join() in removeNavRecord. Let's try it...
                             Toast.makeText(activity, "Successful Deletion", Toast.LENGTH_SHORT ).show();
                             //Log.i("Youssef", "After nav menu item deletion");
                         }
@@ -481,7 +483,7 @@ class NavOperations {
     }
 
     private void navigateToMenuItem( final int idOfNewMenuItem, Bundle bundle ) {
-        navController.navigate( idOfNewMenuItem, bundle );
+         navController.navigate( idOfNewMenuItem, bundle );
         new Thread() { //opening the database needs to be on a separate thread.
             public void run() {
                 activity.dbOperations.loadOnNavigate(

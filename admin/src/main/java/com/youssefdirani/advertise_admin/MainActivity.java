@@ -301,10 +301,11 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setVisibility( BottomNavigationView.INVISIBLE );
         new Thread() { //opening the database needs to be on a separate thread.
             public void run() {
-                dbOperations.setBbBackgroundColorTag( navOperations.getCheckedItemOrder(),
+                int navIndex = navOperations.getCheckedItemOrder();
+                dbOperations.setBbBackgroundColorTag( navIndex,
                         "none" ); //this is correlated to loadBb in DbOperations in my convention, so it's important.
-                dbOperations.deleteBbTable();
-                dbOperations.deleteBottomNavContentTablesButKeepUpTo(0);
+                dbOperations.deleteBbTable( navIndex );
+                dbOperations.deleteBottomNavContentTablesButKeepUpTo(0, navIndex);
             }
         }.start();
     }

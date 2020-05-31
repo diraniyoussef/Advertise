@@ -149,21 +149,9 @@ class OptionsMenu {
                                 "Menu Item is already on the most left !", Toast.LENGTH_LONG ).show();
                         return false;
                     }
-                    final String title2 = bottomMenu.getItem( checkedItemOrder ).getTitle().toString();
-                    final Drawable drawable2 = bottomMenu.getItem( checkedItemOrder ).getIcon();
-                    final int id2 = bottomMenu.getItem( checkedItemOrder ).getItemId();
-                    final int order2 = bottomMenu.getItem( checkedItemOrder ).getOrder();
-                    final String title1 = bottomMenu.getItem( checkedItemOrder - 1 ).getTitle().toString();
-                    final Drawable drawable1 = bottomMenu.getItem( checkedItemOrder - 1 ).getIcon();
-                    final int id1 = bottomMenu.getItem( checkedItemOrder - 1 ).getItemId();
-                    final int order1 = bottomMenu.getItem( checkedItemOrder - 1 ).getOrder();
-                    bottomMenu.removeItem( id1 );
-                    bottomMenu.removeItem( id2 );
-                    bottomMenu.add( R.id.bottombar_menuitems, id1, order2, title1 );
-                    bottomMenu.add( R.id.bottombar_menuitems, id2, order1, title2 )
-                            .setChecked(true);
-                    bottomMenu.findItem( id2 ).setIcon( drawable2 );
-                    bottomMenu.findItem( id1 ).setIcon( drawable1 );
+                    switchItemsLeftward( checkedItemOrder );
+                    bottomMenu.getItem( checkedItemOrder - 1 ).setChecked(true);
+                    activity.dbOperations.switchBottomNavItems_Leftward( checkedItemOrder );
                     //I won't be navigating. Since we already see a fragment, and no need to reenter in it again
                     Toast.makeText( activity, "Successful reordering", Toast.LENGTH_SHORT ).show();
                 }
@@ -182,21 +170,9 @@ class OptionsMenu {
                                 "Menu Item is already on the most right !", Toast.LENGTH_LONG ).show();
                         return false;
                     }
-                    final String title2 = bottomMenu.getItem( checkedItemOrder ).getTitle().toString();
-                    final Drawable drawable2 = bottomMenu.getItem( checkedItemOrder ).getIcon();
-                    final int id2 = bottomMenu.getItem( checkedItemOrder ).getItemId();
-                    final int order2 = bottomMenu.getItem( checkedItemOrder ).getOrder();
-                    final String title1 = bottomMenu.getItem( checkedItemOrder + 1 ).getTitle().toString();
-                    final Drawable drawable1 = bottomMenu.getItem( checkedItemOrder + 1 ).getIcon();
-                    final int id1 = bottomMenu.getItem( checkedItemOrder + 1 ).getItemId();
-                    final int order1 = bottomMenu.getItem( checkedItemOrder + 1 ).getOrder();
-                    bottomMenu.removeItem( id1 );
-                    bottomMenu.removeItem( id2 );
-                    bottomMenu.add( R.id.bottombar_menuitems, id1, order2, title1 );
-                    bottomMenu.add( R.id.bottombar_menuitems, id2, order1, title2 )
-                            .setChecked(true);
-                    bottomMenu.findItem( id2 ).setIcon( drawable2 );
-                    bottomMenu.findItem( id1 ).setIcon( drawable1 );
+                    switchItemsLeftward( checkedItemOrder + 1 );
+                    bottomMenu.getItem( checkedItemOrder + 1 ).setChecked(true);
+                    activity.dbOperations.switchBottomNavItems_Leftward( checkedItemOrder + 1 );
                     //I won't be navigating. Since we already see a fragment, and no need to reenter in it again
                     Toast.makeText( activity, "Successful reordering", Toast.LENGTH_SHORT ).show();
                 }
@@ -208,6 +184,23 @@ class OptionsMenu {
                 ////Log.i("Youssef", "menu item id is " + item.getItemId() );
                 return defautReturnValue;
         }
+    }
+
+    private void switchItemsLeftward( final int oldRightItemOrder ) {
+        final String title2 = bottomMenu.getItem( oldRightItemOrder ).getTitle().toString();
+        final Drawable drawable2 = bottomMenu.getItem( oldRightItemOrder ).getIcon();
+        final int id2 = bottomMenu.getItem( oldRightItemOrder ).getItemId();
+        final int order2 = bottomMenu.getItem( oldRightItemOrder ).getOrder();
+        final String title1 = bottomMenu.getItem( oldRightItemOrder - 1 ).getTitle().toString();
+        final Drawable drawable1 = bottomMenu.getItem( oldRightItemOrder - 1 ).getIcon();
+        final int id1 = bottomMenu.getItem( oldRightItemOrder - 1 ).getItemId();
+        final int order1 = bottomMenu.getItem( oldRightItemOrder - 1 ).getOrder();
+        bottomMenu.removeItem( id1 );
+        bottomMenu.removeItem( id2 );
+        bottomMenu.add( R.id.bottombar_menuitems, id1, order2, title1 );
+        bottomMenu.add( R.id.bottombar_menuitems, id2, order1, title2 );
+        bottomMenu.findItem( id2 ).setIcon( drawable2 );
+        bottomMenu.findItem( id1 ).setIcon( drawable1 );
     }
 
     private void rename_AlertDialog( final MenuItem selectedMenuItem ) {
@@ -368,7 +361,7 @@ class OptionsMenu {
         output.setPadding(30,16,30,16);
         output.setText("The following terms and conditions only apply to you 'the administrator'." +
                 "\n" +
-                "If you do not agree on any of the following then please don't use the app." +
+                "If you do not agree on any of the following then please don't use the app, otherwise the agreement is subject to be broken." +
                 "\n\n" +
                 "1) You may put any image, text, or content that is related to your profile, your business, your company, " +
                 "or your organization." +
@@ -380,7 +373,7 @@ class OptionsMenu {
                 "3) You may not advertise anything that may harm others, any hateful or abusive words, " +
                 "any violent or repulsive content, any misleading content. Nor you may encourage any of these acts." +
                 "\n" +
-                "4) You may not advertise, show, or encourage any alcoholic drinks, nudity (for men or women), " +
+                "4) You may not advertise, show, or encourage any alcoholic drinks (for any reason whatsoever), nudity (for men or women), " +
                 "or pornography." +
                 "\n" +
                 "5) If you had to show any lady (others or yourself if you are a female), " +
@@ -389,11 +382,12 @@ class OptionsMenu {
                 "\n" +
                 "6) You may not put any kind of music in the app." +
                 "\n" +
-                "7) You may not directly link to anything that infringes the above restrictions." +
+                "7) You may not link to anything (as a website, blog, or other means, including but not restricting to social media) " +
+                "that infringes the above restrictions." +
                 "\n\n" +
                 "Please note that some features will not work on older versions of Android." +
                 "\n\n" +
-                "For any question or technical assistance, please contact the developer +961/70/853721");
+                "For any question, sales, or technical assistance, please contact the developer +961/70/853721");
         final ScrollView scrollView = new ScrollView( activity );
         scrollView.arrowScroll(View.SCROLL_AXIS_VERTICAL);
         scrollView.addView( output );

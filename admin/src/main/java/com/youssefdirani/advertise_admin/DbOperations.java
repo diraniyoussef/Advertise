@@ -63,20 +63,20 @@ class DbOperations {
     }
  */
 
-    void removeNavRecord( final int index ) {
-        new Thread() { //opening the database needs to be on a separate thread.
+    void removeNavRecord( final int navIndex ) {
+        Thread thread = new Thread() { //opening the database needs to be on a separate thread.
             public void run() {
                 //Log.i("Youssef", "inside DbOperations : adding a nav entity.");
                 List<NavEntity> navEntityList = permanentDao.getAllNav();
-                NavEntity navEntity = navEntityList.get( index );
+                NavEntity navEntity = navEntityList.get( navIndex );
                 final int originalNavSize = navEntityList.size();
-                concatenateNavTableIndices( index, originalNavSize ); //fixing the index of the records in nav table
+                concatenateNavTableIndices( navIndex, originalNavSize ); //fixing the index of the records in nav table
                 Log.i("Youssef", "before deleting nav entity from database");
                 permanentDao.deleteNavEntity( navEntity );
                 Log.i("Youssef", "after deleting nav entity from database");
-                deleteBbTable();
-                deleteBottomNavContentTablesButKeepUpTo(-1);
-                renameTables( index, originalNavSize );
+                deleteBbTable( navIndex );
+                deleteBottomNavContentTablesButKeepUpTo(-1, navIndex );
+                renameTables( navIndex, originalNavSize );
             }
 
             private void renameTables( final int startingIndex, final int originalNavSize ) {
@@ -96,10 +96,10 @@ class DbOperations {
                         }
                         db.setTransactionSuccessful(); //to commit
                     } catch(Exception e) {
+                        Log.e("error", "position 0.",e);
                         activity.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Log.i("error", "position 0.");
                                 activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
                             }
                         });
@@ -136,7 +136,13 @@ class DbOperations {
                     }
                 }
             }
-        }.start();
+        };
+        thread.start();
+        try {
+            thread.join();
+        } catch ( Exception e ) {
+            Log.e("removeNavRec","an error of join() ", e);
+        }
     }
 
     void switchNavItems_Upwards( final int lowerItemOrder ) { //lowerItemOrder is the old lower item index. By lower I mean lower in position (thus higher in index)
@@ -212,11 +218,12 @@ class DbOperations {
                     Log.i("switchNavItems_Upwards", "just before committing");
                     db.setTransactionSuccessful();
                 } catch(Exception e) {
+                    Log.e("switch nav items", "an error ", e);
                     activity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
-                            Log.i("error", "position 1.");
+
                         }
                     });
                 } finally {
@@ -237,6 +244,64 @@ class DbOperations {
                 //Log.i("switchNavItems","position 3");
             }
         } ).start();
+    }
+
+    void switchBottomNavItems_Leftward( final int oldRightItemOrder ) {
+        (new Thread() { //opening the database needs to be on a separate thread.
+            public void run() {
+                db.beginTransaction();
+                try {
+                    final int navIndex = activity.navOperations.getCheckedItemOrder();
+                    final String bottomBarTableName = generateBbTableName( navIndex );
+                    //Log.i("an error", "oldRightItemOrder is " + oldRightItemOrder);
+                    Cursor cursor_right = db.query("SELECT * FROM '" + bottomBarTableName + "' WHERE index1 = ? ",
+                            new String[]{ String.valueOf( oldRightItemOrder ) } );
+                    Cursor cursor_left = db.query("SELECT * FROM '" + bottomBarTableName + "' WHERE index1 = ? ",
+                            new String[]{ String.valueOf( oldRightItemOrder - 1 ) } );
+                    if( cursor_left.moveToNext() && cursor_right.moveToNext() ) { //checking in an "if" is not needed, but it's ok
+                        final String leftBottomNavTitle = cursor_left.getString( cursor_left.getColumnIndex("title") );
+                        final String leftBottomNavIcon = cursor_left.getString( cursor_left.getColumnIndex("icon") );
+                        final String rightBottomNavTitle = cursor_right.getString( cursor_left.getColumnIndex("title") );
+                        final String rightBottomNavIcon = cursor_right.getString( cursor_left.getColumnIndex("icon") );
+                        //I won't check, but they all must be non-null
+                        ContentValues contentValues = new ContentValues();
+                        //contentValues.put( "uid", 0);
+                        contentValues.put( "title", leftBottomNavTitle);
+                        //contentValues.put( "index1", 0 );
+                        contentValues.put( "icon", leftBottomNavIcon );
+                        int rowsUpdated = db.update( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues, "index1 = ?", //don't say "WHERE" before "index1 = ?", it's already there
+                                new String[]{ String.valueOf( oldRightItemOrder ) } );
+                        //if( rowsUpdated == 0 ) {//must not happen
+                        contentValues = new ContentValues();
+                        //contentValues.put( "uid", 0);
+                        contentValues.put( "title", rightBottomNavTitle);
+                        //contentValues.put( "index1", 0 );
+                        contentValues.put( "icon", rightBottomNavIcon );
+                        rowsUpdated = db.update( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues, "index1 = ?", //don't say "WHERE" before "index1 = ?", it's already there
+                                new String[]{ String.valueOf( oldRightItemOrder - 1 ) } );
+                    } //must not have an else
+
+                    String rightBottomNavContentTableName = generateBottomNavContentTableName( navIndex , oldRightItemOrder );
+                    String leftBottomNavContentTableName = generateBottomNavContentTableName( navIndex , oldRightItemOrder - 1 );
+                    String intermediateBottomNavContentTableName = generateBottomNavContentTableName( navIndex , 1000 );
+                    db.execSQL("ALTER TABLE " + rightBottomNavContentTableName + " RENAME TO " + intermediateBottomNavContentTableName + ";");
+                    db.execSQL("ALTER TABLE " + leftBottomNavContentTableName + " RENAME TO " + rightBottomNavContentTableName + ";");
+                    db.execSQL("ALTER TABLE " + intermediateBottomNavContentTableName + " RENAME TO " + leftBottomNavContentTableName + ";");
+
+                    db.setTransactionSuccessful();
+                } catch (Exception e) {
+                    Log.e("reorder bottom", "an error", e);
+                    activity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
+                        }
+                    });
+                } finally {
+                    db.endTransaction();
+                }
+            }
+        }).start();
     }
 
     void onDestroy() {
@@ -400,7 +465,6 @@ class DbOperations {
                     }
                 }
 
-
                 //Now adding UI tabs from db
                 int index = 0;
                 while ( cursor_bb.moveToNext() ) { //this starts with the second item and on.
@@ -560,7 +624,7 @@ class DbOperations {
                         @Override
                         public void run() {
                             activity.setBottomBarBackgroundColor( "colorWhite" );
-                            activity.navOperations.setIconOfCheckedMenuItem( "ic_action_home", 0);
+                            activity.navOperations.setIconOfCheckedMenuItem( "ic_action_home", 0 );
                             activity.optionsMenu.setFirstOptionsMenuIcon();
                         }
                     }, 100); //I delayed because setFirstOptionsMenuIcon contains something with the toolbar
@@ -683,15 +747,14 @@ class DbOperations {
         }.start();
     }
 
-    void deleteBbTable() {
+    void deleteBbTable( final int navIndex ) {
         Log.i("Youssef", "in deleteBbTable");
-        final String bottomBarTableName = generateBbTableName( activity.navOperations.getCheckedItemOrder() );
-        Log.i("Youssef", "in deleteBbTable");
+        final String bottomBarTableName = generateBbTableName( navIndex );
+        //Log.i("Youssef", "in deleteBbTable");
         deleteTable( bottomBarTableName );
     }
 
-    void deleteBottomNavContentTablesButKeepUpTo( final int startIndex ) { //e.g. 0 to keep only 0 and -1 to remove all.
-        int navIndex = activity.navOperations.getCheckedItemOrder();
+    void deleteBottomNavContentTablesButKeepUpTo( final int startIndex, final int navIndex ) { //e.g. 0 to keep only 0 and -1 to remove all.
         int size = activity.bottomMenu.size();
         for( int i = size - 1 ; i > startIndex ; i-- ) {
             deleteTable( generateBottomNavContentTableName( navIndex, i ) );
@@ -781,7 +844,7 @@ class DbOperations {
                 cursor_bb.moveToLast();
                 final int bottomIndex = cursor_bb.getInt( cursor_bb.getColumnIndex("index1") ) + 1;
                 contentValues.put( "index1", bottomIndex );
-                //contentValues.put( "icon", tag );
+                contentValues.put( "icon", "ic_no_icon" );
                 //I guess "icon" will be null, and it's fine to be null.
                 db.insert( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues ); //returns -1 if failure. https://developer.android.com/reference/androidx/sqlite/db/SupportSQLiteDatabase
                 db.execSQL("CREATE TABLE IF NOT EXISTS " + generateBottomNavContentTableName( navIndex, bottomIndex ) + " ( " +
@@ -840,6 +903,7 @@ class DbOperations {
         final int bottomIndex = activity.bottomNavOperations.getCheckedItemOrder();
         final String bottomBarTableName = generateBbTableName( navIndex );
         try {
+            //order is critical
             int rowsDeleted = db.delete( bottomBarTableName,"index1 = ?",
                     new String[]{ String.valueOf( bottomIndex ) } );
             Log.i("deleteBottom..", "rows deleted = " + rowsDeleted );
@@ -847,7 +911,9 @@ class DbOperations {
                 Log.i("deleteBottom..", "failed to delete");
             }
             concatenateBottomItemIndexes( bottomIndex, bottomBarTableName );
+
             db.execSQL("DROP TABLE IF EXISTS " + generateBottomNavContentTableName( navIndex, bottomIndex ) + ";");
+            concatenateBottomContentTableNames( navIndex, bottomIndex, bottomBarTableName );
 
             db.setTransactionSuccessful(); //to commit
         } catch(Exception e) {
@@ -879,6 +945,14 @@ class DbOperations {
             if( rowsUpdated == 0 ) {//must not happen
                 Log.i("concatenateBottom..", "failed to update");
             }
+        }
+    }
+    private void concatenateBottomContentTableNames( final int navIndex, final int bottomIndex, final String bottomBarTableName ) {
+        Cursor cursor_bb = db.query("SELECT * FROM '" + bottomBarTableName + "'");
+        for( int i = bottomIndex ; i < cursor_bb.getCount() ; i++ ) {
+            Log.i("concatenateBottomTab..", "i = " + i);
+            db.execSQL("ALTER TABLE " + generateBottomNavContentTableName( navIndex, i + 1 ) +
+                    " RENAME TO " + generateBottomNavContentTableName( navIndex, i ) + ";");
         }
     }
 
