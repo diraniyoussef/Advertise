@@ -38,7 +38,7 @@ public interface PermanentDao { //Dao is Data Access Object
     @Insert
     void insertNavHeader(NavHeaderEntity navHeaderEntity); //only going to be used once
 
-    @Query( "SELECT * FROM navheader LIMIT 1" )
+    @Query( "SELECT * FROM nav_header LIMIT 1" )
     NavHeaderEntity getNavHeader();
 
     @Update
@@ -69,5 +69,18 @@ public interface PermanentDao { //Dao is Data Access Object
 
     @Update
     void updateDatabaseInfoRecord( DatabaseInfo databaseInfo ); // it updates every field of the entity where it matches primary key value of navHeaderEntity. https://stackoverflow.com/questions/45789325/update-some-specific-field-of-an-entity-in-android-room
+
+//for the TablesLastUpdate table
+    @Insert
+    void insertTableLastUpdateRecord( TableLastUpdate tableLastUpdate ); //only going to be used once
+
+    @Query( "SELECT * FROM table_last_update" )
+    List<TableLastUpdate> getAllTableLastUpdate();
+
+    @Update
+    void updateTableLastUpdateRecord( TableLastUpdate tableLastUpdate ); // it updates every field of the entity where it matches primary key value of navHeaderEntity. https://stackoverflow.com/questions/45789325/update-some-specific-field-of-an-entity-in-android-room
+
+    @Delete
+    void deleteTablesLastUpdate(TableLastUpdate tableLastUpdate);
 
 }

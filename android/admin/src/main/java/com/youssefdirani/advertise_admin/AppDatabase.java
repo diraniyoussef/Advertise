@@ -1,7 +1,5 @@
 package com.youssefdirani.advertise_admin;
 
-import android.provider.ContactsContract;
-
 import androidx.room.Database;
 import androidx.room.RoomDatabase;
 
@@ -9,7 +7,8 @@ import androidx.room.RoomDatabase;
         entities = {
                 NavHeaderEntity.class,
                 NavEntity.class,
-                DatabaseInfo.class
+                DatabaseInfo.class,
+                TableLastUpdate.class
         },
         version = 1,
         exportSchema = false )

@@ -4,7 +4,7 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-@Entity (tableName = "navheader") //actually this table will contain only 1 entity (record)
+@Entity (tableName = "nav_header") //actually this table will contain only 1 entity (record)
 public class NavHeaderEntity {
     @PrimaryKey  //(autoGenerate = true)// is same as autoincrement.
     public int uid = 0;

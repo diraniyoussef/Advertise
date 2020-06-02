@@ -372,7 +372,7 @@ class OptionsMenu {
                 "\n" +
                 "3) You may not advertise anything that may harm others, any hateful or abusive words, " +
                 "any violent or repulsive content, any shameful or embarrassing content, " +
-                "any misleading content. Nor you may encourage any of these acts." +
+                "or any misleading content. Nor you may encourage any of these acts." +
                 "\n" +
                 "4) You may not put anything that may threaten the general security of any legitimate country," +
                 " or that may cause segregation between ethnicities, religions, or legitimate social groups. " +
@@ -386,7 +386,7 @@ class OptionsMenu {
                 "\n" +
                 "7) You may not put any kind of music in the app." +
                 "\n" +
-                "8) You may not link to anything (as a website, blog, or other means, including but not restricting to social media) " +
+                "8) You may not link to anything (as a website, blog, or other means, including but not limited to social media) " +
                 "that infringes the above restrictions." +
                 "\n\n" +
                 "Please note that some features will not work on older versions of Android." +

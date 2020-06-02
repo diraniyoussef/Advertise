@@ -6,7 +6,6 @@ import androidx.room.PrimaryKey;
 
 @Entity(tableName = "nav")
 class NavEntity {
-
     @PrimaryKey  (autoGenerate = true)// is same as autoincrement.
     int uid = 0;
 

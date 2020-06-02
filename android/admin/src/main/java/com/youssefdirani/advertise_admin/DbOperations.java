@@ -18,15 +18,12 @@ import android.widget.Toast;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import androidx.room.Room;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 import androidx.sqlite.db.SupportSQLiteOpenHelper;
-import androidx.sqlite.db.SupportSQLiteQuery;
-import androidx.sqlite.db.SupportSQLiteQueryBuilder;
 
 class DbOperations {
     private MainActivity activity;
@@ -48,9 +45,10 @@ class DbOperations {
                 List<NavEntity> navEntityList = permanentDao.getAllNav();
                 navEntity.index = navEntityList.size(); //it's my convention to preserve throughout the app the order of indexes
                 permanentDao.insertNav( navEntity );
+                insertOrUpdate_TableLastUpdate("nav", false );
+                //insertOrUpdate_TableLastUpdate("");
                 Log.i("addNavRecord", "about to create tables for index " + navEntity.index);
-                setBottomBarTableAndFirstBottomNavContentTable( navEntity.index ); //getCheckedItemOrder still returns the old value
-
+                setFirstBottomNavContentTable( navEntity.index ); //getCheckedItemOrder still returns the old value
             }
         };
         thread.start();
@@ -83,6 +81,7 @@ class DbOperations {
                 concatenateNavTableIndices( navIndex, originalNavSize ); //fixing the index of the records in nav table
                 Log.i("Youssef", "before deleting nav entity from database");
                 permanentDao.deleteNavEntity( navEntity );
+                insertOrUpdate_TableLastUpdate("nav", false );
                 Log.i("Youssef", "after deleting nav entity from database");
                 deleteBbTable( navIndex );
                 deleteBottomNavContentTablesButKeepUpTo(-1, navIndex );
@@ -100,9 +99,13 @@ class DbOperations {
                                 String oldBottomNavContentTableName = generateBottomNavContentTableName( i + 1, j );
                                 String newBottomNavContentTableName = generateBottomNavContentTableName( i , j );
                                 db.execSQL("ALTER TABLE " + oldBottomNavContentTableName + " RENAME TO " + newBottomNavContentTableName + ";");
+                                delete_TableLastUpdate( oldBottomNavContentTableName );
+                                insertOrUpdate_TableLastUpdate( newBottomNavContentTableName, false );
                             }
                             String newBottomBarTableName = generateBbTableName( i );
                             db.execSQL("ALTER TABLE " + oldBottomBarTableName + " RENAME TO " + newBottomBarTableName + ";");
+                            delete_TableLastUpdate( oldBottomBarTableName );
+                            insertOrUpdate_TableLastUpdate( newBottomBarTableName, false );
                         }
                         db.setTransactionSuccessful(); //to commit
                     } catch(Exception e) {
@@ -143,6 +146,7 @@ class DbOperations {
                         NavEntity navEntity = permanentDao.getNav(i + 1 );
                         navEntity.index = i;
                         permanentDao.updateNav( navEntity );
+                        insertOrUpdate_TableLastUpdate("nav", false );
                     }
                 }
             }
@@ -208,10 +212,14 @@ class DbOperations {
                         String newBottomNavContentTableName = generateBottomNavContentTableName( lowerItemOrder - 1, j );
                         Log.i("switchNavItems_Upwards", newBottomNavContentTableName + " to " + oldBottomNavContentTableName);
                         db.execSQL("ALTER TABLE " + newBottomNavContentTableName + " RENAME TO " + oldBottomNavContentTableName + ";");
+                        delete_TableLastUpdate( newBottomNavContentTableName );
+                        insertOrUpdate_TableLastUpdate( oldBottomNavContentTableName, false );
                     }
                     if( newBbExists ) {
                         Log.i("switchNavItems_Upwards", newBottomBarTableName + " to " + oldBottomBarTableName);
                         db.execSQL("ALTER TABLE " + newBottomBarTableName + " RENAME TO " + oldBottomBarTableName + ";");
+                        delete_TableLastUpdate( newBottomBarTableName );
+                        insertOrUpdate_TableLastUpdate( oldBottomBarTableName, false );
                     }
 
                     Log.i("switchNavItems_Upwards", "Third try");
@@ -220,10 +228,12 @@ class DbOperations {
                         String newBottomNavContentTableName = generateBottomNavContentTableName( lowerItemOrder - 1, j );
                         Log.i("switchNavItems_Upwards", intermediateBottomNavContentTableName + " to " + newBottomNavContentTableName);
                         db.execSQL("ALTER TABLE " + intermediateBottomNavContentTableName + " RENAME TO " + newBottomNavContentTableName + ";");
+                        insertOrUpdate_TableLastUpdate( newBottomNavContentTableName, false );
                     }
                     if( oldBbExists ) {
                         Log.i("switchNavItems_Upwards", intermediateBottomBarTableName + " to " + newBottomBarTableName);
                         db.execSQL("ALTER TABLE " + intermediateBottomBarTableName + " RENAME TO " + newBottomBarTableName + ";");
+                        insertOrUpdate_TableLastUpdate( newBottomBarTableName, false );
                     }
                     Log.i("switchNavItems_Upwards", "just before committing");
 
@@ -253,6 +263,7 @@ class DbOperations {
                 //Log.i("switchNavItems","position 2");
                 permanentDao.updateNav( navEntity2 );
                 //Log.i("switchNavItems","position 3");
+                insertOrUpdate_TableLastUpdate("nav", false );
             }
         } ).start();
     }
@@ -282,6 +293,7 @@ class DbOperations {
                         contentValues.put( "icon", leftBottomNavIcon );
                         int rowsUpdated = db.update( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues, "index1 = ?", //don't say "WHERE" before "index1 = ?", it's already there
                                 new String[]{ String.valueOf( oldRightItemOrder ) } );
+                        insertOrUpdate_TableLastUpdate( bottomBarTableName, false );
                         //if( rowsUpdated == 0 ) {//must not happen
                         contentValues = new ContentValues();
                         //contentValues.put( "uid", 0);
@@ -290,6 +302,7 @@ class DbOperations {
                         contentValues.put( "icon", rightBottomNavIcon );
                         rowsUpdated = db.update( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues, "index1 = ?", //don't say "WHERE" before "index1 = ?", it's already there
                                 new String[]{ String.valueOf( oldRightItemOrder - 1 ) } );
+                        insertOrUpdate_TableLastUpdate( bottomBarTableName, false );
                     } //must not have an else
 
                     String rightBottomNavContentTableName = generateBottomNavContentTableName( navIndex , oldRightItemOrder );
@@ -297,8 +310,10 @@ class DbOperations {
                     String intermediateBottomNavContentTableName = generateBottomNavContentTableName( navIndex , 1000 );
                     db.execSQL("ALTER TABLE " + rightBottomNavContentTableName + " RENAME TO " + intermediateBottomNavContentTableName + ";");
                     db.execSQL("ALTER TABLE " + leftBottomNavContentTableName + " RENAME TO " + rightBottomNavContentTableName + ";");
+                    delete_TableLastUpdate( leftBottomNavContentTableName );
+                    insertOrUpdate_TableLastUpdate( rightBottomNavContentTableName, false );
                     db.execSQL("ALTER TABLE " + intermediateBottomNavContentTableName + " RENAME TO " + leftBottomNavContentTableName + ";");
-
+                    insertOrUpdate_TableLastUpdate( leftBottomNavContentTableName, false );
                     db.setTransactionSuccessful();
                 } catch (Exception e) {
                     Log.e("reorder bottom", "an error", e);
@@ -334,11 +349,11 @@ class DbOperations {
             createBbTable( bottomBarTableName );
             db.setTransactionSuccessful(); //to commit
         } catch(Exception e) {
+            Log.e("error", "setBottomBarTable ", e);
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
-                    Log.i("error", "position 2.");
                 }
             });
         } finally {
@@ -350,9 +365,9 @@ class DbOperations {
         return "table" + navIndex + "_" + bottomNavIndex;
     }
 
-    private void setBottomBarTableAndFirstBottomNavContentTable( final int navIndex ) {
+    private void setFirstBottomNavContentTable( final int navIndex ) {
         db.beginTransaction(); //if you're thinking in using transaction : https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html
-        final String bottomBarTableName = generateBbTableName( navIndex );
+        //final String bottomBarTableName = generateBbTableName( navIndex );
         final String firstBottomNavContentTableName = generateBottomNavContentTableName( navIndex, 0 );
         try {
             //createBbTable( bottomBarTableName );
@@ -362,8 +377,9 @@ class DbOperations {
                     "uid INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     "type TEXT, " +
                     "content TEXT);");
-            Log.i("fatal","after firstBottomNavContentTableName which is " + firstBottomNavContentTableName );
+            Log.i("Youssef","after firstBottomNavContentTableName which is " + firstBottomNavContentTableName );
             //I can't insert anything here because it's up to the user to insert either images or texts or whatever.
+            insertOrUpdate_TableLastUpdate( firstBottomNavContentTableName, true );
             db.setTransactionSuccessful(); //to commit
         } catch(Exception e) {
             Log.e("fatal", "I got an error", e);
@@ -371,7 +387,6 @@ class DbOperations {
                 @Override
                 public void run() {
                     activity.toast("Unable to save data internally. Data integrity is not guaranteed.", Toast.LENGTH_LONG);
-                    Log.i("error", "position 3.");
                 }
             });
         } finally {
@@ -392,11 +407,12 @@ class DbOperations {
         if( cursor_bb.getCount() == 0 ) {
             ContentValues contentValues = new ContentValues();
             //contentValues.put( "uid", 0);
-            contentValues.put( "title", "Option 1");
+            contentValues.put( "title", "Section 1");
             contentValues.put( "index1", 0 );
             contentValues.put( "icon", "ic_no_icon" );
             //I guess "icon" will be null, and it's fine to be null.
             db.insert( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues ); //returns -1 if failure. https://developer.android.com/reference/androidx/sqlite/db/SupportSQLiteDatabase
+            insertOrUpdate_TableLastUpdate( bottomBarTableName, false );
         }
     }
 
@@ -552,7 +568,6 @@ class DbOperations {
             @Override
             public void run() {
                 final String backgroundColorTag = navEntity.topBar_hamburgerColorTag;
-
                 //ironically, we didn't need a 100 ms delay here ??
                 if( backgroundColorTag != null && !backgroundColorTag.equalsIgnoreCase("none") ) {
                     activity.setTopBarHamburgerColor( backgroundColorTag );
@@ -570,7 +585,6 @@ class DbOperations {
             @Override
             public void run() {
                 final String backgroundColorTag = navEntity.topBar_backgroundColorTag;
-
                 //ironically, we didn't need a 100 ms delay here ??
                 if( backgroundColorTag != null && !backgroundColorTag.equalsIgnoreCase("none") ) {
                     activity.setTopBarBackgroundColor( backgroundColorTag );
@@ -618,7 +632,7 @@ class DbOperations {
                 SupportSQLiteOpenHelper supportSQLiteOpenHelper = db_room.getOpenHelper(); //referring to the opened connection to the database. //very good explanation : https://stackoverflow.com/questions/17348480/how-do-i-prevent-sqlite-database-locks - related https://stackoverflow.com/questions/8104832/sqlite-simultaneous-reading-and-writing. And this is related as well https://www.sqlite.org/lockingv3.html
                 db = supportSQLiteOpenHelper.getWritableDatabase(); //enableWriteAheadLogging() When write-ahead logging is not enabled (the default), it is not possible for reads and writes to occur on the database at the same time. https://developer.android.com/reference/android/database/sqlite/SQLiteDatabase#create(android.database.sqlite.SQLiteDatabase.CursorFactory)
                 //It's better to make a mechanism that corrects itself in case of an error. I.e. make database tables coherent. But I will leave that for now. In case of an error, I believe the app won't crash and it will show something anyway, and for now it's up to the admin to correct whatever he wishes.
-                setBottomBarTableAndFirstBottomNavContentTable(0);
+                setFirstBottomNavContentTable(0);
                 //https://developer.android.com/reference/android/database/sqlite/SQLiteDatabase#execSQL(java.lang.String,%20java.lang.Object[])
                 loadNavEntities();
                 loadOnNavigate(0);
@@ -729,8 +743,6 @@ class DbOperations {
                 builder.show();
             }
 
-
-
             private void insertNavEntity() {
                 List<NavEntity> navEntityList = permanentDao.getAllNav();
                 if ( navEntityList.size() == 0 ) { //I believe it won't be null the first time we enter. It's just an empty list.
@@ -751,6 +763,7 @@ class DbOperations {
                     navEntity.iconTag = "ic_action_home";
                     Log.i("Youssef", "before inserting the first navEntity");
                     permanentDao.insertNav( navEntity );
+                    insertOrUpdate_TableLastUpdate("nav", false);
                     Log.i("Youssef", "after inserting the first navEntity");
                 } else {
                     Log.i("Youssef", "We already have an entity ??");
@@ -766,6 +779,7 @@ class DbOperations {
                     //create a record. We only need 1.
                     navHeaderEntity = new NavHeaderEntity();
                     permanentDao.insertNavHeader( navHeaderEntity ); //it worked even without specifying anything in the just-created navHeaderEntity
+                    insertOrUpdate_TableLastUpdate("nav_header", false);
                 } else {
                     //Log.i("Youssef", "inside MainActivity : onStart. A nav header entity already exists.");
                     //I can't assign the UI here, not until all is inflated and so on.
@@ -804,13 +818,14 @@ class DbOperations {
                 NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
                 navEntity.title = name;
                 permanentDao.updateNav( navEntity );
+                insertOrUpdate_TableLastUpdate("nav", false);
             }
         }.start();
     }
 
-    void updateBbBackgroundColorTag(final int indexOfNavMenuItem, final String bottombar_backgroundColorTag ) {
+    void updateBbBackgroundColorTag( final int indexOfNavMenuItem, final String bottombar_backgroundColorTag ) {
         Log.i("setBbBackgroundColor", "in setBbBackgroundColorTag, of " + indexOfNavMenuItem + " to tag "
-                + bottombar_backgroundColorTag);
+                + bottombar_backgroundColorTag );
         final List<NavEntity> navEntityList = permanentDao.getAllNav();
         Log.i("setBbBackgroundColor", "in setBbBackgroundColorTag. position 1");
         NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
@@ -818,6 +833,7 @@ class DbOperations {
         navEntity.bottombar_backgroundColorTag = bottombar_backgroundColorTag;
         Log.i("setBbBackgroundColor", "in setBbBackgroundColorTag. position 3");
         permanentDao.updateNav( navEntity ); //this might cause sometimes a silent error, such that the statements after it don't work
+        insertOrUpdate_TableLastUpdate("nav", false );
         Log.i("setBbBackgroundColor", "in setBbBackgroundColorTag, just to make sure : " +
                 permanentDao.getAllNav().get(indexOfNavMenuItem).bottombar_backgroundColorTag );
     }
@@ -827,12 +843,14 @@ class DbOperations {
         NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
         navEntity.topBar_backgroundColorTag = colorTag;
         permanentDao.updateNav( navEntity );
+        insertOrUpdate_TableLastUpdate("nav", false);
     }
     void setTopBarHamburgerColorTag(int indexOfNavMenuItem, String tag) {
         final List<NavEntity> navEntityList = permanentDao.getAllNav();
         NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
         navEntity.topBar_hamburgerColorTag = tag;
         permanentDao.updateNav( navEntity );
+        insertOrUpdate_TableLastUpdate("nav", false);
     }
 
     void setTopBarTitleColorTag( int indexOfNavMenuItem, String tag) {
@@ -840,6 +858,7 @@ class DbOperations {
         NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
         navEntity.topBar_titleColorTag = tag;
         permanentDao.updateNav( navEntity );
+        insertOrUpdate_TableLastUpdate("nav", false);
     }
 
     void setTopBar3DotsColorTag(int indexOfNavMenuItem, String tag) {
@@ -847,6 +866,7 @@ class DbOperations {
         NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
         navEntity.topBar_3dotsColorTag = tag;
         permanentDao.updateNav( navEntity );
+        insertOrUpdate_TableLastUpdate("nav", false);
     }
 
     void setStatusBarColorTag( final int indexOfNavMenuItem, final String colorTag ) {
@@ -854,6 +874,7 @@ class DbOperations {
         NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
         navEntity.statusBar_backgroundColorTag = colorTag;
         permanentDao.updateNav( navEntity );
+        insertOrUpdate_TableLastUpdate("nav", false);
     }
 
     void setStatusBarIconTint( final int indexOfNavMenuItem, final boolean isChecked ) {
@@ -863,8 +884,18 @@ class DbOperations {
                 NavEntity navEntity = navEntityList.get( indexOfNavMenuItem );
                 navEntity.statusBar_dark = isChecked;
                 permanentDao.updateNav( navEntity );
+                insertOrUpdate_TableLastUpdate("nav", false);
             }
         }.start();
+    }
+
+    void setIconOfCheckedNavMenuItem( final String tag, final int nav_menuitem_index ) { //we know it won't be null, so I won't protect it
+        List<NavEntity> navEntityList = permanentDao.getAllNav();
+        NavEntity navEntity = navEntityList.get( nav_menuitem_index );
+        navEntity.iconTag  = tag;
+        Log.i("setIconNav", "nav icon is set in db for " + nav_menuitem_index );
+        permanentDao.updateNav( navEntity );
+        insertOrUpdate_TableLastUpdate("nav", false);
     }
 
     void deleteBbTable( final int navIndex ) {
@@ -887,6 +918,7 @@ class DbOperations {
             Log.i("deleteTable", "before deleting table " + tableName );
             db.execSQL("DROP TABLE IF EXISTS " + tableName + ";");
             Log.i("deleteTable", "after deleting table " + tableName );
+            delete_TableLastUpdate( tableName );
             db.setTransactionSuccessful(); //to commit
         } catch(Exception e) {
             Log.e("error", "position 4.", e);
@@ -899,14 +931,6 @@ class DbOperations {
         } finally {
             db.endTransaction();
         }
-    }
-
-    void setIconOfCheckedNavMenuItem( final String tag, final int nav_menuitem_index ) { //we know it won't be null, so I won't protect it
-        List<NavEntity> navEntityList = permanentDao.getAllNav();
-        NavEntity navEntity = navEntityList.get( nav_menuitem_index );
-        navEntity.iconTag  = tag;
-        Log.i("setIconNav", "nav icon is set in db for " + nav_menuitem_index );
-        permanentDao.updateNav( navEntity );
     }
 
     void setIconOfCheckedBottomNavMenuItem( String tag, int navIndex ) {
@@ -922,6 +946,7 @@ class DbOperations {
             Log.i("setIcon", "bottomNavTab = " + bottomNavTab );
             int rowsUpdated = db.update( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues, "index1 = ?", //don't say "WHERE" before "index1 = ?", it's already there
                     new String[]{ String.valueOf( bottomNavTab ) } );
+            insertOrUpdate_TableLastUpdate( bottomBarTableName, false );
             Log.i("setIcon", "rows updated = " + rowsUpdated);
             if( rowsUpdated == 0 ) {//must not happen
                 Log.i("setIcon", "failed to update");
@@ -967,10 +992,13 @@ class DbOperations {
                 contentValues.put( "icon", "ic_no_icon" );
                 //I guess "icon" will be null, and it's fine to be null.
                 db.insert( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues ); //returns -1 if failure. https://developer.android.com/reference/androidx/sqlite/db/SupportSQLiteDatabase
-                db.execSQL("CREATE TABLE IF NOT EXISTS " + generateBottomNavContentTableName( navIndex, bottomIndex ) + " ( " +
+                insertOrUpdate_TableLastUpdate( bottomBarTableName, false );
+                String bottomNavContentTableName = generateBottomNavContentTableName( navIndex, bottomIndex );
+                db.execSQL("CREATE TABLE IF NOT EXISTS " + bottomNavContentTableName + " ( " +
                         "uid INTEGER PRIMARY KEY AUTOINCREMENT, " +
                         "type TEXT, " +
                         "content TEXT);");
+                insertOrUpdate_TableLastUpdate( bottomNavContentTableName, false );
             }
             db.setTransactionSuccessful(); //to commit
         } catch(Exception e) {
@@ -998,6 +1026,7 @@ class DbOperations {
             //contentValues.put( "icon", tag );
             int rowsUpdated = db.update( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues, "index1 = ?",
                     new String[]{ String.valueOf(activity.bottomNavOperations.getCheckedItemOrder() ) } );
+            insertOrUpdate_TableLastUpdate( bottomBarTableName, false );
             Log.i("renameBottom..", "rows updated = " + rowsUpdated);
             if( rowsUpdated == 0 ) {//must not happen
                 Log.i("renameBottom..", "failed to update");
@@ -1026,18 +1055,22 @@ class DbOperations {
         NavEntity navEntity = permanentDao.getNav( navIndex );
         navEntity.bottombar_backgroundColorTag = "none";
         permanentDao.updateNav( navEntity );
+        insertOrUpdate_TableLastUpdate("nav", false);
 
         try {
             //order is critical
             int rowsDeleted = db.delete( bottomBarTableName,"index1 = ?",
                     new String[]{ String.valueOf( bottomIndex ) } );
+            insertOrUpdate_TableLastUpdate( bottomBarTableName, false );
             Log.i("deleteBottom..", "rows deleted = " + rowsDeleted );
             if( rowsDeleted == 0 ) { //must not happen
                 Log.i("deleteBottom..", "failed to delete");
             }
             concatenateBottomItemIndexes( bottomIndex, bottomBarTableName );
 
-            db.execSQL("DROP TABLE IF EXISTS " + generateBottomNavContentTableName( navIndex, bottomIndex ) + ";");
+            String bottomNavContentTableName = generateBottomNavContentTableName( navIndex, bottomIndex );
+            db.execSQL("DROP TABLE IF EXISTS " + bottomNavContentTableName + ";");
+            delete_TableLastUpdate( bottomNavContentTableName );
             concatenateBottomContentTableNames( navIndex, bottomIndex, bottomBarTableName );
 
             db.setTransactionSuccessful(); //to commit
@@ -1066,6 +1099,7 @@ class DbOperations {
             //contentValues.put( "icon", tag );
             int rowsUpdated = db.update( bottomBarTableName, SQLiteDatabase.CONFLICT_NONE, contentValues, "index1 = ?",
                     new String[]{ String.valueOf( i + 1 ) } );
+            insertOrUpdate_TableLastUpdate( bottomBarTableName, false );
             Log.i("concatenateBottom..", "rows updated = " + rowsUpdated);
             if( rowsUpdated == 0 ) {//must not happen
                 Log.i("concatenateBottom..", "failed to update");
@@ -1076,8 +1110,12 @@ class DbOperations {
         Cursor cursor_bb = db.query("SELECT * FROM '" + bottomBarTableName + "'");
         for( int i = bottomIndex ; i < cursor_bb.getCount() ; i++ ) {
             Log.i("concatenateBottomTab..", "i = " + i);
-            db.execSQL("ALTER TABLE " + generateBottomNavContentTableName( navIndex, i + 1 ) +
-                    " RENAME TO " + generateBottomNavContentTableName( navIndex, i ) + ";");
+            String oldName = generateBottomNavContentTableName( navIndex, i + 1 );
+            String newName = generateBottomNavContentTableName( navIndex, i );
+            db.execSQL("ALTER TABLE " + oldName +
+                    " RENAME TO " + newName+ ";");
+            delete_TableLastUpdate( oldName );
+            insertOrUpdate_TableLastUpdate( newName, false );
         }
     }
 
@@ -1203,10 +1241,57 @@ class DbOperations {
             return;
         }
         permanentDao.updateNavHeader(navHeaderEntity);
+        insertOrUpdate_TableLastUpdate("nav_header", false);
     }
 
 //##########################################################################################################################
-//#######################                  #################################################################################
+//#######################  TableLastUpdate #################################################################################
 //##########################################################################################################################
+    void insertOrUpdate_TableLastUpdate( String tableName , boolean insertOnly ) {
+        if( tableName == null ) {
+            Log.i("error", "insertOrUpdate_TableLastUpdate. tableName is null");
+            return;
+        }
+        List<TableLastUpdate> tableLastUpdateList = permanentDao.getAllTableLastUpdate();
+        for( TableLastUpdate tableLastUpdate : tableLastUpdateList ) {
+            if( tableLastUpdate.tableName.equals( tableName ) ) {
+                if( insertOnly ) {
+                    return;
+                }
+                tableLastUpdate.lastUpdate = new Date().getTime();
+                permanentDao.updateTableLastUpdateRecord( tableLastUpdate );
+                updateDbInfo();
+                return;
+            }
+        }
+        TableLastUpdate tableLastUpdate = new TableLastUpdate();
+        tableLastUpdate.tableName = tableName;
+        tableLastUpdate.lastUpdate = new Date().getTime();
+        permanentDao.insertTableLastUpdateRecord( tableLastUpdate );
+        updateDbInfo();
+    }
+    void delete_TableLastUpdate( String tableName ) {
+        if( tableName == null ) {
+            Log.i("error", "delete_TableLastUpdate. tableName is null");
+            return;
+        }
+        List<TableLastUpdate> tableLastUpdateList = permanentDao.getAllTableLastUpdate();
+        for( TableLastUpdate tableLastUpdate : tableLastUpdateList ) {
+            if( tableLastUpdate.tableName.equals( tableName ) ) {
+                permanentDao.deleteTablesLastUpdate( tableLastUpdate );
+                updateDbInfo();
+                return;
+            }
+        }
+    }
 
+    private void updateDbInfo() {
+        DatabaseInfo databaseInfo = permanentDao.getDatabaseInfo();
+        if( databaseInfo != null ) { //true
+            databaseInfo.lastUpdate = new Date().getTime();
+            permanentDao.updateDatabaseInfoRecord( databaseInfo );
+        } else {
+            Log.i("error", "updateDbInfo. No record");
+        }
+    }
 }
