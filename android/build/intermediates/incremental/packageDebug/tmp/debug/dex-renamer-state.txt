@@ -1,0 +1,4 @@
+#Tue Jun 02 12:28:26 EEST 2020
+base.0=D\:\\android_projects\\Advertise\\admin\\build\\intermediates\\dex\\debug\\out\\classes.dex
+path.0=classes.dex
+renamed.0=classes.dex
